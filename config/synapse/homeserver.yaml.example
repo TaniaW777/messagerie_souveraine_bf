@@ -1,0 +1,29 @@
+server_name: "localhost"
+pid_file: /data/homeserver.pid
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses: ['0.0.0.0']
+    resources:
+      - names: [client, federation]
+        compress: false
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: CHANGE_ME_mot_de_passe_long
+    database: synapse
+    host: db
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+log_config: "/data/localhost.log.config"
+media_store_path: /data/media_store
+signing_key_path: "/data/localhost.signing.key"
+registration_shared_secret: "CHANGE_ME"
+macaroon_secret_key: "CHANGE_ME"
+form_secret: "CHANGE_ME"
+enable_registration: false
+report_stats: false
