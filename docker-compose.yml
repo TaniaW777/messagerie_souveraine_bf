@@ -37,4 +37,4 @@ services:
     volumes:
       - ./config/element/config.json:/app/config.json:ro
     ports:
-      - "8080:80"
+      - "8081:80"
