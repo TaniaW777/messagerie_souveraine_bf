@@ -83,9 +83,9 @@ Conformément à l'espace d'innovation du hackathon, l'équipe propose **FASOVOI
 
 | Membre | Rôle opérationnel | Responsabilités techniques |
 |---|---|---|
-| **Jonathan OUEDRAOGO** | Architecte Système & Intégrateur | Orchestration Docker Compose, intégration Synapse-PostgreSQL, Nginx HTTPS, automatisation `install.sh` et reproductibilité sur machine neuve. |
-| **Membre 2 (Sécurité)** | Responsable Cybersécurité & Identité | Intégration OIDC Authentik, politique MFA TOTP, tests de pénétration intrus, vérification E2EE Megolm et note de sécurité. |
-| **Membre 3 (Usage & Démo)** | Ingénieur Interface & Innovation | Personnalisation Element Web, développement de la console FasoVoice (Mooré/Dioula/Vocal), scénario de test et vidéo de démonstration. |
+| **Tania ZABRE** | Architecte Système & Intégrateur | Orchestration Docker Compose, intégration Synapse-PostgreSQL, Nginx HTTPS, automatisation `install.sh` et reproductibilité sur machine neuve. |
+| **Jonathan OUEDRAOGO** | Responsable Cybersécurité & Identité | Intégration OIDC Authentik, politique MFA TOTP, tests de pénétration intrus, vérification E2EE Megolm et note de sécurité. |
+| **Christelle DEHOUMON** | Ingénieur Interface & Innovation | Personnalisation Element Web, développement de la console FasoVoice (Mooré/Dioula/Vocal), scénario de test et vidéo de démonstration. |
 
 ---
 
