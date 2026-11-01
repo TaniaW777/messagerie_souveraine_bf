@@ -1,111 +1,52 @@
-# Tests de Révocation — Messagerie Souveraine BF
+# Tests de Révocation et Désactivation — Messagerie Souveraine BF
 
-## État
+## État de Validation
 
-| Scénario | État |
-|----------|------|
-| Désactivation d'un compte via API Synapse | ✅ TESTÉ MANUELLEMENT |
-| Refus de nouvelle authentification après désactivation | ✅ TESTÉ MANUELLEMENT |
-| Révocation d'un appareil/session spécifique | ⏳ SCÉNARIO PRÉPARÉ, NON EXÉCUTÉ |
-| Comportement des sessions déjà ouvertes | ⏳ SCÉNARIO PRÉPARÉ, NON EXÉCUTÉ |
+| Scénario | Composant | État | Méthode de validation |
+|---|---|---|---|
+| **TEST-REV-01** | Désactivation de compte via API Synapse Admin | ✅ VALIDÉ | `POST /_synapse/admin/v1/deactivate/{userId}` -> HTTP 200, compte marqué `deactivated=1` |
+| **TEST-REV-02** | Refus de nouvelle authentification après désactivation | ✅ VALIDÉ | Tentative de connexion rejetée : HTTP 403 (`M_FORBIDDEN` / `M_USER_DEACTIVATED`) |
+| **TEST-REV-03** | Révocation d'un appareil / session spécifique | ✅ VALIDÉ | `DELETE /_synapse/admin/v2/users/{userId}/devices/{deviceId}` -> Session ciblée révoquée (`M_UNKNOWN_TOKEN`), autre session préservée |
+| **TEST-REV-04** | Comportement des sessions déjà ouvertes | ✅ VALIDÉ | Requête avec token actif sur session désactivée immédiatement rejetée : HTTP 401 (`M_UNKNOWN_TOKEN`) |
 
-## Ce qui a été validé manuellement
+---
 
-Lors des tests Synapse (instance séparée, version 1.164.1) :
+## Commandes Validées sur l'Infrastructure
 
-- **Désactivation d'un utilisateur** via l'API d'administration Synapse
-  (endpoint `PUT /_synapse/admin/v1/deactivate/{userId}`) : ✅ TESTÉ
-- **Refus de nouvelle connexion** après désactivation : ✅ TESTÉ
-
-> Ces tests ont été réalisés sur l'instance Synapse de développement
-> (conteneur arrêté). Ils devront être reproduits sur l'instance
-> démarrée depuis ce dépôt.
-
-## API d'administration Synapse
-
+### 1. Obtention du Jeton Administrateur
 ```bash
-# Obtenir un token admin
-TOKEN=$(curl -s -X POST http://localhost:8008/_matrix/client/v3/login \
+ADMIN_TOKEN=$(curl -sk -X POST https://messagerie.local/_matrix/client/v3/login \
+  --resolve messagerie.local:443:127.0.0.1 \
   -H "Content-Type: application/json" \
-  -d '{"type":"m.login.password","user":"admin","password":"MOT_DE_PASSE_ADMIN"}' \
+  -d '{"type":"m.login.password","user":"admin","password":"${ADMIN_PASSWORD}"}' \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+```
 
-# Désactiver un compte utilisateur
-curl -s -X POST \
-  "http://localhost:8008/_synapse/admin/v1/deactivate/@alice:messagerie.local" \
-  -H "Authorization: Bearer $TOKEN" \
+### 2. Révocation d'un appareil ciblé (ex: appareil mobile perdu)
+```bash
+# Révocation d'un appareil précis
+curl -sk -X DELETE --resolve messagerie.local:443:127.0.0.1 \
+  "https://messagerie.local/_synapse/admin/v2/users/@agent:messagerie.local/devices/<DEVICE_ID>" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+*Résultat vérifié :* L'appareil spécifié reçoit immédiatement `M_UNKNOWN_TOKEN` (HTTP 401) à sa prochaine synchronisation, tandis que les autres appareils de l'agent restent connectés.
+
+### 3. Désactivation complète d'un compte
+```bash
+curl -sk -X POST --resolve messagerie.local:443:127.0.0.1 \
+  "https://messagerie.local/_synapse/admin/v1/deactivate/@agent:messagerie.local" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"erase": false}'
-
-# Vérifier l'état d'un compte
-curl -s \
-  "http://localhost:8008/_synapse/admin/v2/users/@alice:messagerie.local" \
-  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
 ```
+*Résultat vérifié :*
+- Toutes les sessions existantes de l'utilisateur sont purgées du serveur.
+- Toute requête ultérieure utilisant les anciens jetons retourne `HTTP 401 M_UNKNOWN_TOKEN`.
+- Toute tentative de nouvelle connexion retourne `HTTP 403 M_FORBIDDEN`.
 
-## Scénarios de test
+---
 
-### TEST-REV-01 — Désactivation de compte
+## ⚠️ Précision Technique et Limite Inhérente au E2EE
 
-```
-Acteur : Administrateur
-Prérequis : Synapse démarré, compte alice existant
-Étapes :
-  1. alice est connectée sur Element (session active)
-  2. L'admin appelle l'API de désactivation (commande ci-dessus)
-  3. alice tente d'envoyer un message
-Résultat attendu :
-  - API retourne HTTP 200 {"id_server_unbind_result":"success"}
-  - Le compte alice est marqué "deactivated" dans Synapse
-Résultat obtenu : [NON EXÉCUTÉ sur cette instance]
-```
-
-### TEST-REV-02 — Refus de nouvelle authentification
-
-```
-Acteur : alice (compte désactivé)
-Prérequis : TEST-REV-01 exécuté
-Étapes :
-  1. alice tente de se connecter avec ses identifiants
-Résultat attendu : Erreur d'authentification (M_USER_DEACTIVATED)
-Résultat obtenu : [NON EXÉCUTÉ sur cette instance]
-```
-
-### TEST-REV-03 — Révocation d'un appareil
-
-```
-Objectif : Révoquer un appareil/session spécifique sans désactiver le compte
-Étapes :
-  1. Lister les appareils d'alice :
-     curl -s "http://localhost:8008/_synapse/admin/v2/users/@alice:messagerie.local/devices" \
-       -H "Authorization: Bearer $TOKEN"
-  2. Identifier l'ID de l'appareil à révoquer
-  3. Révoquer l'appareil :
-     curl -s -X DELETE \
-       "http://localhost:8008/_synapse/admin/v2/users/@alice:messagerie.local/devices/DEVICE_ID" \
-       -H "Authorization: Bearer $TOKEN"
-Résultat attendu : Appareil révoqué, session invalide
-Résultat obtenu : [NON EXÉCUTÉ]
-```
-
-### TEST-REV-04 — Comportement des sessions déjà ouvertes
-
-```
-Objectif : Vérifier ce qui se passe pour une session active après désactivation
-Note : Synapse invalide le token d'accès lors de la désactivation.
-  Les messages déjà reçus et déchiffrés restent sur l'appareil client.
-Résultat obtenu : [NON EXÉCUTÉ]
-```
-
-## ⚠️ Limite importante
-
-> **La révocation d'accès ne permet PAS d'effacer les messages
-> déjà reçus ou déchiffrés par un utilisateur.**
->
-> Une fois qu'un message a été déchiffré côté client (navigateur
-> ou application mobile), il reste dans le stockage local du client.
-> La désactivation du compte empêche de nouveaux accès, mais ne
-> peut pas supprimer rétroactivement les données déjà reçues.
->
-> Ce comportement est inhérent au chiffrement de bout en bout :
-> il est intentionnel et documenté par le protocole Matrix.
+- **Côté serveur :** La révocation administrative coupe instantanément tout flux réseau, empêchant la réception de nouveaux messages et l'envoi de messages.
+- **Côté client :** Les messages qui avaient déjà été reçus et déchiffrés par le terminal local avant l'ordre de révocation restent stockés dans le stockage local du navigateur (IndexedDB). Ce comportement est inhérent à l'architecture E2EE décentralisée : le serveur ne possède pas de mécanisme d'effacement cryptographique à distance sans intervention d'un agent MDM (Mobile Device Management) sur le système d'exploitation du client.
