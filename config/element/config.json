@@ -6,6 +6,7 @@
         }
     },
     "brand": "Messagerie Souveraine BF",
+    "disable_custom_urls": true,
     "disable_guests": true,
     "default_theme": "light",
     "room_directory": {

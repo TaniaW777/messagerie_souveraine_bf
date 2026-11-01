@@ -59,6 +59,21 @@ enable_registration: false
 report_stats: false
 
 # ---------------------------------------------------------------
+# LIMITATION DE DÉBIT POUR LES CONNEXIONS
+# Valeurs adaptées pour l'environnement local de démonstration
+# ---------------------------------------------------------------
+rc_login:
+  address:
+    per_second: 10
+    burst_count: 100
+  account:
+    per_second: 10
+    burst_count: 100
+  failed_attempts:
+    per_second: 10
+    burst_count: 100
+
+# ---------------------------------------------------------------
 # INTÉGRATION OIDC / AUTHENTIK
 # Décommenter et compléter après configuration d'Authentik
 # Le client_secret NE DOIT JAMAIS être commité dans Git.
