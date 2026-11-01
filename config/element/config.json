@@ -1,7 +1,7 @@
 {
     "default_server_config": {
         "m.homeserver": {
-            "base_url": "http://messagerie.local:8008",
+            "base_url": "https://messagerie.local",
             "server_name": "messagerie.local"
         }
     },

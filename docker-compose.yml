@@ -1,7 +1,7 @@
 services:
 
   # ------------------------------------------------------------------
-  # BASE DE DONNÉES POSTGRESQL
+  # BASE DE DONNÉES POSTGRESQL (Synapse)
   # ------------------------------------------------------------------
   db:
     image: postgres:16-alpine
@@ -22,7 +22,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
-    # PostgreSQL n'est PAS exposé sur l'hôte — accès interne uniquement
 
   # ------------------------------------------------------------------
   # SERVEUR MATRIX SYNAPSE
@@ -38,9 +37,11 @@ services:
       SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
     volumes:
       - ./data/synapse:/data
+      - ./certs/ca-bundle.crt:/etc/ssl/certs/ca-certificates.crt:ro
     networks:
       - msb-internal
       - msb-public
+      - msb-auth-bridge
     ports:
       - "127.0.0.1:${SYNAPSE_PORT:-8008}:8008"
     healthcheck:
@@ -73,16 +74,39 @@ services:
       retries: 3
       start_period: 10s
 
+  # ------------------------------------------------------------------
+  # REVERSE PROXY HTTPS LOCAL (Nginx)
+  # ------------------------------------------------------------------
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: msb-proxy
+    restart: unless-stopped
+    depends_on:
+      - element
+      - synapse
+    volumes:
+      - ./config/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      msb-public:
+        aliases:
+          - messagerie.local
+          - auth.messagerie.local
+      msb-auth-bridge: {}
+
 networks:
-  # Réseau interne : Synapse ↔ PostgreSQL (pas d'accès externe)
+  # Réseau interne : Synapse <-> PostgreSQL (isolé)
   msb-internal:
     driver: bridge
     internal: true
 
-  # Réseau public : Element ↔ Synapse (accès hôte via ports)
+  # Réseau public : Proxy <-> Element / Synapse
   msb-public:
     driver: bridge
 
-volumes:
-  # Les volumes sont gérés en bind mount (./data/) pour faciliter
-  # la sauvegarde et l'inspection. Pas de volumes Docker nommés.
+  # Réseau partagé externe avec Authentik
+  msb-auth-bridge:
+    external: true
