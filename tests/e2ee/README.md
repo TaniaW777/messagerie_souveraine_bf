@@ -17,15 +17,15 @@ Lors des tests validés, les messages échangés entre les utilisateurs de test 
 
 ```bash
 docker exec msb-postgres psql -U synapse -d synapse -c "
-SELECT 
+SELECT
     e.event_id,
     e.type,
     e.stream_ordering,
     (ej.json::jsonb -> 'content' ->> 'algorithm') AS algorithme,
-    CASE 
-        WHEN (ej.json::jsonb -> 'content' ->> 'ciphertext') IS NOT NULL 
-        THEN 'Présent (' || LENGTH(ej.json::jsonb -> 'content' ->> 'ciphertext') || ' octets)' 
-        ELSE 'Absent' 
+    CASE
+        WHEN (ej.json::jsonb -> 'content' ->> 'ciphertext') IS NOT NULL
+        THEN 'Présent (' || LENGTH(ej.json::jsonb -> 'content' ->> 'ciphertext') || ' octets)'
+        ELSE 'Absent'
     END AS presence_ciphertext
 FROM events e
 JOIN event_json ej ON e.event_id = ej.event_id
@@ -46,6 +46,6 @@ LIMIT 5;
 
 - **Tests automatisés matrix-nio (réalisés) :**
   Ces tests utilisent les primitives cryptographiques Olm/Megolm via la bibliothèque native Matrix Python (`matrix-nio[e2e]`). Ils prouvent mathématiquement et protocolairement que Synapse joue son rôle de serveur souverain sans avoir accès aux clés de session Megolm ni aux messages déchiffrés.
-  
+
 - **Parcours utilisateur Element Web (recommandé pour la démo jury) :**
   Dans le navigateur, Element Web gère ses propres magasins cryptographiques dans IndexedDB. Lors de la création d'un salon avec le cadenas activé, les clés Megolm sont distribuées de façon transparente entre les participants. En cas d'avertissement "Appareils non vérifiés", l'utilisateur peut continuer directement ou initier la comparaison d'émojis sécurisée.

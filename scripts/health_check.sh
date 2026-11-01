@@ -46,16 +46,16 @@ EXPECTED_CONTAINERS=(
 for entry in "${EXPECTED_CONTAINERS[@]}"; do
     cname="${entry%%:*}"
     expected_status="${entry##*:}"
-    
+
     if ! docker inspect "$cname" >/dev/null 2>&1; then
         echo -e "  ${RED}[MANQUANT] Conteneur $cname introuvable.${NC}"
         ERRORS=$((ERRORS + 1))
         continue
     fi
-    
+
     state=$(docker inspect --format '{{.State.Status}}' "$cname" 2>/dev/null || echo "unknown")
     health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cname" 2>/dev/null || echo "none")
-    
+
     if [ "$expected_status" = "healthy" ]; then
         if [ "$health" = "healthy" ]; then
             echo -e "  ${GREEN}[OK] $cname : en cours d'exécution et sain ($health).${NC}"

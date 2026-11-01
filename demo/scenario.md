@@ -151,15 +151,15 @@ Pour prouver au jury que le serveur de messagerie ne stocke jamais les messages 
 Ouvrir un terminal sur la machine hôte :
 ```bash
 docker exec msb-postgres psql -U synapse -d synapse -c "
-SELECT 
+SELECT
     e.event_id,
     e.type,
     e.stream_ordering,
     (ej.json::jsonb -> 'content' ->> 'algorithm') AS algorithme,
-    CASE 
-        WHEN (ej.json::jsonb -> 'content' ->> 'ciphertext') IS NOT NULL 
-        THEN 'Présent (' || LENGTH(ej.json::jsonb -> 'content' ->> 'ciphertext') || ' octets)' 
-        ELSE 'Absent' 
+    CASE
+        WHEN (ej.json::jsonb -> 'content' ->> 'ciphertext') IS NOT NULL
+        THEN 'Présent (' || LENGTH(ej.json::jsonb -> 'content' ->> 'ciphertext') || ' octets)'
+        ELSE 'Absent'
     END AS presence_ciphertext
 FROM events e
 JOIN event_json ej ON e.event_id = ej.event_id
@@ -171,7 +171,7 @@ LIMIT 5;
 
 **Résultat affiché en direct :**
 ```
-                   event_id                   |       type       | stream_ordering |      algorithme      | presence_ciphertext  
+                   event_id                   |       type       | stream_ordering |      algorithme      | presence_ciphertext
 ----------------------------------------------+------------------+-----------------+----------------------+----------------------
  $dDXSgpvwhvtdGWTVCUj7yyKbR_Y7xx-NwV88DGlVUPc | m.room.encrypted |              32 | m.megolm.v1.aes-sha2 | Présent (424 octets)
  $TGowWIsJseSWZWmQiHTaWHpUUwiqidD0KnFP4h846H0 | m.room.encrypted |              31 | m.megolm.v1.aes-sha2 | Présent (382 octets)

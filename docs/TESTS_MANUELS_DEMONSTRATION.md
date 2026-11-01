@@ -179,15 +179,15 @@ Avant de démarrer les tests :
 - **Commande à exécuter sur la machine hôte :**
   ```bash
   docker exec msb-postgres psql -U synapse -d synapse -c "
-  SELECT 
+  SELECT
       e.event_id,
       e.type,
       e.stream_ordering,
       (ej.json::jsonb -> 'content' ->> 'algorithm') AS algorithme,
-      CASE 
-          WHEN (ej.json::jsonb -> 'content' ->> 'ciphertext') IS NOT NULL 
-          THEN 'Présent (' || LENGTH(ej.json::jsonb -> 'content' ->> 'ciphertext') || ' octets)' 
-          ELSE 'Absent' 
+      CASE
+          WHEN (ej.json::jsonb -> 'content' ->> 'ciphertext') IS NOT NULL
+          THEN 'Présent (' || LENGTH(ej.json::jsonb -> 'content' ->> 'ciphertext') || ' octets)'
+          ELSE 'Absent'
       END AS presence_ciphertext
   FROM events e
   JOIN event_json ej ON e.event_id = ej.event_id
