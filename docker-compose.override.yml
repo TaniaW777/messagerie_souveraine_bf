@@ -1,0 +1,5 @@
+# Page d’accueil Racines BF, en lecture seule.
+services:
+  element:
+    volumes:
+      - ./config/element/racines-accueil.html:/app/racines-accueil.html:ro

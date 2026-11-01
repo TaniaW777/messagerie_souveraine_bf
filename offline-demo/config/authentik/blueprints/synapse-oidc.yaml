@@ -1,0 +1,45 @@
+version: 1
+metadata:
+  name: Synapse OIDC & MFA Integration
+  labels:
+    blueprints.goauthentik.io/system: "false"
+entries:
+  - identifiers:
+      name: Agents Messagerie Souveraine
+    model: authentik_core.group
+    id: group-msb-agents
+    attrs:
+      name: Agents Messagerie Souveraine
+      is_superuser: false
+
+  - identifiers:
+      name: Synapse
+    model: authentik_providers_oauth2.oauth2provider
+    id: provider-synapse
+    attrs:
+      name: Synapse
+      client_type: confidential
+      client_id: !Context client_id
+      client_secret: !Context client_secret
+      include_claims_in_id_token: true
+      sub_mode: user_username
+      issuer_mode: per_provider
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, "goauthentik.io/providers/oauth2/scope-openid"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, "goauthentik.io/providers/oauth2/scope-email"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, "goauthentik.io/providers/oauth2/scope-profile"]]
+      _redirect_uris:
+        - url: https://messagerie.local/_synapse/client/oidc/callback
+          matching_mode: strict
+          redirect_uri_type: authorization
+
+  - identifiers:
+      slug: synapse
+    model: authentik_core.application
+    id: app-synapse
+    attrs:
+      name: Synapse
+      slug: synapse
+      provider: !KeyOf provider-synapse
+      group: !KeyOf group-msb-agents
+      meta_description: "Serveur de Messagerie Souveraine Matrix Synapse"

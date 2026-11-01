@@ -1,0 +1,81 @@
+# ============================================================
+# SECRETS ET ENVIRONNEMENT LOCAL - NE JAMAIS COMMITTER
+# ============================================================
+.env
+.env.local
+.env.*.local
+
+# ============================================================
+# DONNÉES PERSISTANTES DOCKER
+# ============================================================
+data/
+data/**
+
+# ============================================================
+# CLÉS PRIVÉES ET CERTIFICATS
+# ============================================================
+*.signing.key
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+certs/
+ssl/
+
+# ============================================================
+# CONFIGURATION LOCALE SYNAPSE (générée, contient des secrets)
+# ============================================================
+# data/synapse/homeserver.yaml  (déjà couvert par data/)
+# data/synapse/*.signing.key    (déjà couvert par data/)
+
+# ============================================================
+# DUMPS ET SAUVEGARDES
+# ============================================================
+*.sql
+!tests/*.sql
+*.dump
+*.bak
+*.backup
+
+# ============================================================
+# LOGS
+# ============================================================
+*.log
+logs/
+
+# ============================================================
+# OS ET ÉDITEURS
+# ============================================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ============================================================
+# PYTHON / NODE (si scripts de test)
+# ============================================================
+__pycache__/
+*.pyc
+node_modules/
+
+# Identifiants locaux securises de demonstration
+.credentials*
+*.local.txt
+
+# ============================================================
+# PACK HORS-LIGNE — Images Docker et doublons de médias
+# ============================================================
+offline-demo/images/*.tar.gz
+offline-demo/demo/fasovoice/audio/*.mp3
+
+
+# ── SENTINEL BF ──────────────────────────────────────────────────
+# Base de données et logs locaux (données d'exploitation)
+data/sentinel/sentinel.db
+data/sentinel/sentinel.log
+data/sentinel/*.db
+data/sentinel/*.log
