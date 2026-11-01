@@ -29,7 +29,7 @@ echo "Destination du pack : $DEST_DIR"
 echo ""
 
 # 1. Création de l'arborescence complète (miroir exact de la racine projet)
-mkdir -p "$DEST_DIR"/{images,compose,config/{nginx,element,synapse,authentik/blueprints},scripts,demo/fasovoice/audio}
+mkdir -p "$DEST_DIR"/{images,compose,config/{nginx,element,synapse,authentik/blueprints},scripts,demo/fasovoice/audio,sentinel,tests}
 
 # 2. Synchronisation des scripts d'exploitation (Source unique : scripts/)
 echo -e "${BOLD}[1/6] Synchronisation des scripts d'exploitation...${NC}"
@@ -70,6 +70,12 @@ cp "$PROJECT_ROOT/config/nginx/nginx.conf" "$DEST_DIR/config/nginx/nginx.conf"
 cp "$PROJECT_ROOT/config/element/config.json" "$DEST_DIR/config/element/config.json"
 cp "$PROJECT_ROOT/config/synapse/homeserver.yaml.example" "$DEST_DIR/config/synapse/homeserver.yaml.example"
 
+# Module SENTINEL BF (Cybersécurité)
+cp "$PROJECT_ROOT/sentinel/sentinel.py" "$DEST_DIR/sentinel/sentinel.py"
+cp "$PROJECT_ROOT/sentinel/Dockerfile" "$DEST_DIR/sentinel/Dockerfile"
+cp "$PROJECT_ROOT/tests/test_sentinel_bf.py" "$DEST_DIR/tests/test_sentinel_bf.py"
+chmod +x "$DEST_DIR/tests/test_sentinel_bf.py"
+
 # Configuration Authentik autonome dans config/authentik/ (clé pour install.sh sur machine neuve)
 cp "$PROJECT_ROOT/config/authentik/docker-compose.yml" "$DEST_DIR/config/authentik/docker-compose.yml"
 cp "$PROJECT_ROOT/config/authentik/.env.example" "$DEST_DIR/config/authentik/.env.example"
@@ -88,7 +94,7 @@ echo -e "  ${GREEN}[OK]${NC} $AUDIO_COUNT/16 fichiers audio copiés dans le pack
 # 5. Contrôle des archives Docker et génération des empreintes SHA256
 echo -e "\n${BOLD}[4/6] Contrôle des images Docker du pack et calcul des empreintes SHA256...${NC}"
 MISSING_IMAGES=0
-for img in synapse.tar.gz element.tar.gz postgres.tar.gz nginx.tar.gz authentik.tar.gz; do
+for img in synapse.tar.gz element.tar.gz postgres.tar.gz nginx.tar.gz authentik.tar.gz sentinel.tar.gz; do
     if [ -f "$DEST_DIR/images/$img" ]; then
         SZ=$(du -h "$DEST_DIR/images/$img" | cut -f1)
         echo -e "  ${GREEN}[PRÉSENT]${NC} $img ($SZ)"
@@ -123,8 +129,8 @@ cat <<EOF > "$DEST_DIR/manifest.json"
   "generated_at": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
   "standalone_ready": true,
   "audio_files_count": $AUDIO_COUNT,
-  "docker_images_present": $((5 - MISSING_IMAGES)),
-  "docker_images_expected": 5,
+  "docker_images_present": $((6 - MISSING_IMAGES)),
+  "docker_images_expected": 6,
   "layout": {
     "root_compose": "docker-compose.yml",
     "authentik_compose": "config/authentik/docker-compose.yml",

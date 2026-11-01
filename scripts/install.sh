@@ -51,7 +51,7 @@ fi
 
 # Vérification des images Docker requises pour le mode hors-ligne
 echo "  -> Contrôle de l'autonomie hors-ligne des images Docker..."
-REQUIRED_IMAGES=("postgres:16-alpine" "matrixdotorg/synapse:v1.164.1" "vectorim/element-web:v1.11.109" "nginx:1.27-alpine" "ghcr.io/goauthentik/server:2026.8.5")
+REQUIRED_IMAGES=("postgres:16-alpine" "matrixdotorg/synapse:v1.164.1" "vectorim/element-web:v1.11.109" "nginx:1.27-alpine" "ghcr.io/goauthentik/server:2026.8.5" "msb-sentinel-bf:1.0")
 for img in "${REQUIRED_IMAGES[@]}"; do
     if ! docker image inspect "$img" >/dev/null 2>&1; then
         echo -e "  ${YELLOW}[INFO]${NC} Image '$img' non trouvée localement."

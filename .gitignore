@@ -72,3 +72,10 @@ node_modules/
 offline-demo/images/*.tar.gz
 offline-demo/demo/fasovoice/audio/*.mp3
 
+
+# ── SENTINEL BF ──────────────────────────────────────────────────
+# Base de données et logs locaux (données d'exploitation)
+data/sentinel/sentinel.db
+data/sentinel/sentinel.log
+data/sentinel/*.db
+data/sentinel/*.log

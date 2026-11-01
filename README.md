@@ -6,6 +6,7 @@
 [![Licence](https://img.shields.io/badge/Licence-Apache%202.0-blue.svg)](LICENSE)
 [![Sécurité](https://img.shields.io/badge/Chiffrement-Megolm%20E2EE-green.svg)](docs/SECURITY_AUDIT.md)
 [![Authentification](https://img.shields.io/badge/MFA-OIDC%20%2B%20TOTP-orange.svg)](tests/mfa/README.md)
+[![Cybersécurité](https://img.shields.io/badge/Cybersécurité-Sentinel%20BF-purple.svg)](docs/SENTINEL_BF.md)
 [![Innovation](https://img.shields.io/badge/Innovation-FasoVoice%20Multilingue-red.svg)](demo/fasovoice/)
 
 ---
@@ -21,6 +22,7 @@ Les agents publics de l'État burkinabè recourent quotidiennement à des applic
 - **Identité forte et vérifiée :** Inscription publique fermée ; délégation OIDC vers l'IdP Authentik avec double facteur TOTP (RFC 6238) obligatoire.
 - **Révocation immédiate :** Coupure réseau instantanée côté serveur lors de l'exclusion d'un agent ou de la désactivation d'un compte (HTTP 403 `M_FORBIDDEN`).
 - **Autonomie territoriale :** Fédération désactivée (`federation_domain_whitelist: []`), aucune fuite de métadonnées hors du périmètre national.
+- **Cybersécurité SENTINEL BF :** Surveillance continue des flux d'authentification, détection en temps réel des connexions suspectes (brute force, password spraying, compromissions) et alertes automatiques dans un salon Matrix réservé aux administrateurs.
 - **Innovation FASOVOICE :** Console de crise multilingue avec diffusion d'alertes en **Français**, **Mooré** et **Dioula** et synthèse vocale locale sans API externe.
 
 ---
@@ -46,8 +48,12 @@ Les agents publics de l'État burkinabè recourent quotidiennement à des applic
                            ┌──────▼──────┐      ┌──────▼──────┐
                            │ PostgreSQL  │      │  Authentik  │ IdP OIDC + MFA
                            │(msb-postgres│      │ (Port 9000) │ (msb-auth-bridge)
-                           └─────────────┘      └─────────────┘
-                             (interne)
+                           └─────────────┘      └──────┬──────┘
+                             (interne)                 │ Événements d'accès
+                                                ┌──────▼──────┐
+                                                │ Sentinel BF │ Moteur de détection
+                                                │(msb-sentinel│ & alertes Matrix
+                                                └─────────────┘
 ```
 
 | Composant | Version | Licence OSI | Rôle opérationnel |
@@ -55,6 +61,7 @@ Les agents publics de l'État burkinabè recourent quotidiennement à des applic
 | **Matrix Synapse** | `v1.164.1` | Apache 2.0 | Homeserver souverain, gestion des salons et clés cryptographiques. |
 | **Element Web** | `v1.11.109` | Apache 2.0 | Interface web sécurisée, déchiffrement Megolm local dans le navigateur. |
 | **Authentik** | `2026.8.5` | MIT | Fournisseur d'identité étatique OIDC avec second facteur TOTP obligatoire. |
+| **Sentinel BF** | `v1.0` | Apache 2.0 | Détection d'attaques en temps réel (brute force, spraying) & alertes Matrix. |
 | **PostgreSQL** | `16-alpine` | PostgreSQL Lic. | Base relationnelle persistante isolée (seuls des ciphertexts sont stockés). |
 | **Nginx** | `1.27-alpine` | 2-clause BSD | Reverse proxy frontal durci (liaison stricte `127.0.0.1`). |
 | **FasoVoice** | `v1.0` | Apache 2.0 | Console de crise multilingue (Mooré, Dioula, Français) & lecture vocale. |
@@ -99,6 +106,8 @@ Ce script vérifie les dépendances, génère les secrets locaux (`.env`), crée
 | **Console FasoVoice** | `https://messagerie.local/fasovoice/` | Diffusion multilingue & mode crise |
 | **Authentik SSO** | `https://auth.messagerie.local` | Gestion d'identité & validation TOTP |
 | **API Matrix** | `https://messagerie.local/_matrix/client/versions` | Sondes et intégrations |
+| **Sentinel BF (Webhook & Health)** | `http://127.0.0.1:8088/health` | Détection d'intrusions & alertes |
+| **Salon Alertes Sentinel** | `#sentinel-alertes:messagerie.local` | Notifications d'incidents Matrix |
 
 ### Comptes pré-configurés
 Les identifiants et secrets TOTP sont stockés localement sur la machine hôte dans `.credentials_demo.local` (`chmod 600`, exclu de Git) :
@@ -106,6 +115,7 @@ Les identifiants et secrets TOTP sont stockés localement sur la machine hôte d
 - **`bob_demo`** (Agent d'intervention) : Connexion OIDC + TOTP dynamique.
 - **`charlie_demo`** (Collaborateur cellule) : Connexion OIDC + TOTP dynamique.
 - **`admin`** (Administrateur système d'urgence) : Compte d'API local de secours.
+- **`sentinel_bf`** (Agent technique de cybersécurité) : Émetteur automatique des alertes d'intrusion.
 
 ---
 
@@ -120,6 +130,7 @@ En situation de crise nationale, la clarté et la rapidité des ordres sont vita
 
 ## 6. Vérification et Suite de Tests de Sécurité
 
+### 6.1 Tests de sécurité Matrix et chiffrement E2EE
 Exécuter le banc de test automatisé couvrant l'épreuve Intrus et le chiffrement des fichiers :
 ```bash
 python3 tests/test_matrix_security.py
@@ -130,6 +141,20 @@ python3 tests/test_matrix_security.py
 - Coupure stricte de la fédération (`HTTP 404 M_UNRECOGNIZED`)
 - Chiffrement client AES-256-CTR, upload media store opaque, déchiffrement vérifié
 - Rejet d'accès et d'envoi dans les salons privés non invités
+
+### 6.2 Tests de détection d'intrusion Sentinel BF
+Exécuter la suite complète de détection et alertes cybersécurité :
+```bash
+python3 tests/test_sentinel_bf.py
+```
+*Couverture (7/7 vérifications) :*
+- Santé du service Sentinel BF (`HTTP 200 /health`)
+- Ingestion normale sans faux positif
+- Détection de force brute (≥ 5 échecs en 5 min)
+- Détection de compromission (connexion réussie après échecs multiples)
+- Détection d'attaque distribuée (Password Spraying sur ≥ 3 comptes)
+- Rejet des requêtes webhook non authentifiées (`HTTP 401`)
+- Réception et formatage des alertes de sécurité dans le salon Matrix `#sentinel-alertes:messagerie.local`
 
 ---
 
@@ -145,6 +170,7 @@ python3 tests/test_matrix_security.py
 
 - [`NOTE_PRE_PROJET.md`](NOTE_PRE_PROJET.md) : Note de concept, architecture, stack et rôles (2 pages).
 - [`docs/SECURITY_AUDIT.md`](docs/SECURITY_AUDIT.md) : Note de sécurité détaillée et métadonnées (2 pages).
+- [`docs/SENTINEL_BF.md`](docs/SENTINEL_BF.md) : Spécification technique et règles de détection Sentinel BF.
 - [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) : Inventaire complet des licences tierces OSI.
 - [`docs/SCENARIO_VIDEO_DEMO.md`](docs/SCENARIO_VIDEO_DEMO.md) : Conducteur vidéo chronométré (3 minutes max).
 - [`demo/scenario.md`](demo/scenario.md) : Guide détaillé des manipulations pour le jury.

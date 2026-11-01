@@ -13,6 +13,7 @@ La plateforme **Messagerie Souveraine BF** comprend l'intégralité des briques 
 - **Fournisseur d'identité (IdP) :** Authentik 2026.8.5 avec flux OIDC PKCE.
 - **Base de données persistante :** PostgreSQL 16 (réseau interne isolé).
 - **Reverse proxy & terminaison TLS :** Nginx 1.27 (TLS 1.2/1.3, ports 127.0.0.1).
+- **Module de cybersécurité :** Sentinel BF v1.0 (détection d'intrusion & alertes Matrix).
 - **Module d'innovation multilingue :** Console de crise locale FasoVoice.
 
 ---
@@ -48,6 +49,7 @@ La plateforme **Messagerie Souveraine BF** comprend l'intégralité des briques 
 - **Segmentation réseau étanche :** La base PostgreSQL ne possède aucun port publié vers l'hôte. Nginx lie les ports applicatifs strictement sur `127.0.0.1`.
 - **Désactivation totale de la fédération :** `federation_domain_whitelist: []` et retrait des ressources de fédération du listener.
 - **Limitation de débit (Rate-Limiting) :** Configuration `rc_login` anti-bruteforce active sur Synapse et Authentik.
+- **Détection des menaces d'authentification (Sentinel BF) :** Moteur d'analyse comportementale en temps réel détectant les attaques par force brute (≥ 5 échecs en 5 min), le password spraying (1 IP ciblant ≥ 3 comptes) et les compromissions de compte (succès après échecs multiples), avec alertes instantanées dans un salon privé Matrix réservé aux administrateurs.
 
 ---
 

@@ -27,6 +27,7 @@ IMAGES=(
     "postgres.tar.gz|postgres:16-alpine"
     "nginx.tar.gz|nginx:1.27-alpine"
     "authentik.tar.gz|ghcr.io/goauthentik/server:2026.8.5"
+    "sentinel.tar.gz|msb-sentinel-bf:1.0"
 )
 
 LOADED=0

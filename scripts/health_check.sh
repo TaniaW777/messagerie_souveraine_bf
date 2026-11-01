@@ -38,6 +38,7 @@ EXPECTED_CONTAINERS=(
     "msb-synapse:healthy"
     "msb-element:healthy"
     "msb-proxy:running"
+    "msb-sentinel:healthy"
     "authentik-server-1:healthy"
     "authentik-worker-1:healthy"
     "authentik-postgresql-1:healthy"
@@ -134,6 +135,15 @@ if [ "$FASO_CODE" = "200" ] && [ "$FASO_AUDIO_CODE" = "200" ]; then
     echo -e "  ${GREEN}[OK] FasoVoice Console & Audio Hors-Ligne (HTTPS:443) -> HTTP $FASO_CODE / $FASO_AUDIO_CODE${NC}"
 else
     echo -e "  ${RED}[ÉCHEC] FasoVoice Console -> HTTP $FASO_CODE (audio: $FASO_AUDIO_CODE, attendu: 200)${NC}"
+    ERRORS=$((ERRORS + 1))
+fi
+
+# E. Sentinel BF Cybersécurité (Détection & Alertes)
+SENTINEL_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8088/health || echo "000")
+if [ "$SENTINEL_CODE" = "200" ]; then
+    echo -e "  ${GREEN}[OK] Sentinel BF Cybersécurité (HTTP:8088) -> HTTP $SENTINEL_CODE${NC}"
+else
+    echo -e "  ${RED}[ÉCHEC] Sentinel BF Cybersécurité -> HTTP $SENTINEL_CODE (attendu: 200)${NC}"
     ERRORS=$((ERRORS + 1))
 fi
 
