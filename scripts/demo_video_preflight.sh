@@ -62,6 +62,7 @@ fi
 # 4. Vérification de l'accès HTTPS aux interfaces Web
 echo -e "\n${BOLD}[4/7] Contrôle des accès HTTPS (Reverse Proxy Nginx)...${NC}"
 CODE_ELEMENT=$(curl -sk -o /dev/null -w "%{http_code}" https://messagerie.local/ || echo "000")
+CODE_FASOVOICE=$(curl -sk -o /dev/null -w "%{http_code}" https://messagerie.local/fasovoice/ || echo "000")
 CODE_SYNAPSE=$(curl -sk -o /dev/null -w "%{http_code}" https://messagerie.local/_matrix/client/versions || echo "000")
 CODE_AUTH=$(curl -sk -o /dev/null -w "%{http_code}" https://auth.messagerie.local/ || echo "000")
 
@@ -69,6 +70,13 @@ if [ "$CODE_ELEMENT" = "200" ]; then
     echo -e "  ${GREEN}[OK]${NC} Element Web accessible (https://messagerie.local -> HTTP $CODE_ELEMENT)"
 else
     echo -e "  ${RED}[ÉCHEC]${NC} Element Web inaccessible (HTTP $CODE_ELEMENT)"
+    ERRORS=$((ERRORS + 1))
+fi
+
+if [ "$CODE_FASOVOICE" = "200" ]; then
+    echo -e "  ${GREEN}[OK]${NC} Console FasoVoice accessible (https://messagerie.local/fasovoice/ -> HTTP $CODE_FASOVOICE)"
+else
+    echo -e "  ${RED}[ÉCHEC]${NC} Console FasoVoice inaccessible (HTTP $CODE_FASOVOICE)"
     ERRORS=$((ERRORS + 1))
 fi
 

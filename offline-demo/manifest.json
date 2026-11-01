@@ -1,0 +1,15 @@
+{
+  "project": "Messagerie Souveraine BF — Pack Hors-Ligne",
+  "version": "1.0-hackathon226",
+  "generated_at": "2026-11-01T18:58:31Z",
+  "standalone_ready": true,
+  "audio_files_count": 16,
+  "docker_images_present": 5,
+  "docker_images_expected": 5,
+  "layout": {
+    "root_compose": "docker-compose.yml",
+    "authentik_compose": "config/authentik/docker-compose.yml",
+    "images_dir": "images/",
+    "scripts_dir": "scripts/"
+  }
+}

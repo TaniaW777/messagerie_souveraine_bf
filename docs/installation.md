@@ -1,251 +1,126 @@
-# Guide d'installation — Messagerie Souveraine BF
-
-## Prérequis
-
-- Docker Engine ≥ 24 et Docker Compose v2 (plugin)
-- 7,5 Go de RAM (Synapse + PostgreSQL + Element + Authentik)
-- Ports disponibles : **8008** (Synapse) et **8081** (Element)
-- Git, Python 3 (pour la génération de secrets)
-
-> **Authentik** est installé séparément dans `~/authentik` et tourne
-> sur les ports 9000 (HTTP) et 9443 (HTTPS).
-> Ne pas lancer tous les services simultanément si la RAM est limitée.
+# Guide d'Installation Complet — Messagerie Souveraine BF
+## Procédure Reproductible pour Déploiement sur Machine Neuve
+*Hackathon 226 — Édition 2026 (MTDPCE / DGTD)*
 
 ---
 
-## 1. Récupérer le projet
+## 1. Prérequis Système
+
+| Ressource | Exigence minimale | Recommandé |
+|---|---|---|
+| **Système d'exploitation** | Linux (Ubuntu 22.04 / 24.04, Debian 12) | Ubuntu 24.04 LTS |
+| **Mémoire vive (RAM)** | 4 Go (Messagerie seule) | 8 Go (Messagerie + Authentik) |
+| **Espace disque** | 10 Go d'espace libre | 20 Go SSD |
+| **Logiciels requis** | Docker Engine ≥ 24, Docker Compose v2, OpenSSL, Python 3, Git | `docker compose version` fonctionnel |
+| **Ports libres (hôte)** | 80, 443, 8008, 8081, 9000, 9443 (liés sur `127.0.0.1`) | Aucun conflit sur ces ports |
+
+---
+
+## 2. Configuration Préalable du Système Hôte
+
+### A. Déclaration des noms de domaine locaux (`/etc/hosts`)
+Ajouter les domaines de la plateforme dans le fichier `/etc/hosts` de la machine exécutant le navigateur :
+```bash
+echo "127.0.0.1 messagerie.local auth.messagerie.local" | sudo tee -a /etc/hosts
+```
+
+*Vérification :*
+```bash
+ping -c 1 messagerie.local
+ping -c 1 auth.messagerie.local
+```
+
+---
+
+## 3. Installation Automatisée en Une Seule Commande
+
+Le projet inclut un script d'installation clé en main idempotent :
 
 ```bash
+# 1. Cloner le projet et se positionner sur la branche develop
 git clone https://github.com/TaniaW777/messagerie_souveraine_bf.git
 cd messagerie_souveraine_bf
 git checkout develop
+
+# 2. Exécuter le script d'installation
+./scripts/install.sh
 ```
+
+### Ce que réalise automatiquement `scripts/install.sh` :
+1. **Contrôle des dépendances :** Vérifie la présence de Docker, Compose v2, OpenSSL et Python 3.
+2. **Génération des secrets locaux :** Si le fichier `.env` est absent, il est créé à partir de `.env.example` avec des clés aléatoires sécurisées (PostgreSQL, secrets Synapse). Les permissions sont fixées à `chmod 600`.
+3. **Création des volumes persistants :** Prépare `data/synapse/`, `data/postgres/` et `certs/`.
+4. **Création du réseau partagé :** Initialise le bridge Docker inter-projets `msb-auth-bridge`.
+5. **Génération des certificats TLS :** Exécute `scripts/generate_certs.sh` pour créer la PKI locale avec SAN (`messagerie.local`, `auth.messagerie.local`), les certificats serveurs et le trust bundle CA pour Synapse.
+6. **Démarrage d'Authentik :** Lance les conteneurs Authentik et provisionne le provider OIDC Synapse et les comptes de test via `scripts/provision_authentik.py`.
+7. **Démarrage de la pile Messagerie :** Lance PostgreSQL, Matrix Synapse, Element Web et le proxy Nginx via `docker compose up -d`.
+8. **Contrôle de santé :** Exécute `scripts/health_check.sh` pour vérifier l'état nominal de chaque service et affiche les URL d'accès.
 
 ---
 
-## 2. Configurer le fichier `.env`
+## 4. Procédure Manuelle Détaillée (Étape par Étape)
 
+Si vous préférez installer chaque composant manuellement :
+
+### Étape 1 : Préparation de l'environnement
 ```bash
 cp .env.example .env
+# Générer des secrets forts :
+sed -i "s/CHANGE_ME_mot_de_passe_postgresql_long_et_aleatoire/$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')/g" .env
+chmod 600 .env
 ```
 
-Éditer `.env` et remplacer **chaque** valeur `CHANGE_ME` :
-
-| Variable | Description | Comment générer |
-|---|---|---|
-| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL | 20 caractères aléatoires |
-| `SYNAPSE_REGISTRATION_SHARED_SECRET` | Secret d'enregistrement | `python3 -c "import secrets; print(secrets.token_urlsafe(64))"` |
-| `SYNAPSE_MACAROON_SECRET_KEY` | Clé des tokens | Même commande |
-| `SYNAPSE_FORM_SECRET` | Secret des formulaires | Même commande |
-| `AUTHENTIK_OIDC_CLIENT_ID` | ID client OIDC | Depuis Authentik (étape 5) |
-| `AUTHENTIK_OIDC_CLIENT_SECRET` | Secret client OIDC | Depuis Authentik (étape 5) |
-
-> ⚠️ Le fichier `.env` est ignoré par Git. Ne jamais le committer.
-
----
-
-## 3. Résolution DNS locale
-
-Ajouter dans `/etc/hosts` (Linux/macOS) :
-
-```
-127.0.0.1   messagerie.local
-127.0.0.1   auth.messagerie.local
-```
-
----
-
-## 4. Créer les dossiers de données
-
+### Étape 2 : Réseau et Certificats
 ```bash
-mkdir -p data/synapse data/postgres
+docker network create msb-auth-bridge || true
+./scripts/generate_certs.sh
 ```
 
----
-
-## 5. Générer la configuration Synapse (première fois uniquement)
-
+### Étape 3 : Démarrage d'Authentik
 ```bash
-docker run --rm \
-  -v "$(pwd)/data/synapse:/data" \
-  -e SYNAPSE_SERVER_NAME=messagerie.local \
-  -e SYNAPSE_REPORT_STATS=no \
-  matrixdotorg/synapse:v1.164.1 generate
+# Si Authentik est déployé via config/authentik :
+cp config/authentik/.env.example config/authentik/.env
+docker compose -f config/authentik/docker-compose.yml up -d
 ```
 
-Trois fichiers apparaissent dans `data/synapse/` :
-- `homeserver.yaml` (configuration principale — **contient des secrets**)
-- `messagerie.local.log.config`
-- `messagerie.local.signing.key` (**clé de signature — ne jamais partager**)
-
----
-
-## 6. Adapter `data/synapse/homeserver.yaml`
-
-Le fichier généré utilise SQLite par défaut. Remplacer le bloc `database:` :
-
-```yaml
-database:
-  name: psycopg2
-  args:
-    user: synapse
-    password: VOTRE_POSTGRES_PASSWORD_DU_DOT_ENV
-    database: synapse
-    host: db
-    port: 5432
-    cp_min: 5
-    cp_max: 10
-```
-
-S'assurer également que :
-```yaml
-enable_registration: false
-x_forwarded: false    # false sans proxy nginx
-report_stats: false
-```
-
-Le modèle complet est dans `config/synapse/homeserver.yaml.example`.
-
----
-
-## 7. Démarrer les services
-
+### Étape 4 : Démarrage de Messagerie Souveraine BF
 ```bash
 docker compose up -d
 ```
 
-Vérifier l'état :
+### Étape 5 : Vérification
 ```bash
-docker compose ps
-```
-
-Les trois services (`msb-postgres`, `msb-synapse`, `msb-element`)
-doivent être **Up** et **healthy** après 30-60 secondes.
-
----
-
-## 8. Créer les comptes
-
-```bash
-# Compte administrateur
-docker exec -it msb-synapse register_new_matrix_user \
-  -c /data/homeserver.yaml \
-  -u admin -a \
-  http://localhost:8008
-
-# Comptes utilisateurs
-docker exec -it msb-synapse register_new_matrix_user \
-  -c /data/homeserver.yaml \
-  -u alice --no-admin \
-  http://localhost:8008
+./scripts/health_check.sh
 ```
 
 ---
 
-## 9. Vérification de l'installation
+## 5. Points d'Accès et Vérifications
 
-```bash
-# API Synapse
-curl http://localhost:8008/_matrix/client/versions
-
-# Tables PostgreSQL
-docker exec msb-postgres psql -U synapse -d synapse -c "\dt"
-
-# Interface Element
-# Ouvrir http://localhost:8081 dans le navigateur
-```
-
----
-
-## Intégration OIDC / Authentik (configuration avancée)
-
-> Cette section décrit la configuration à réaliser **après** que
-> l'installation de base est validée.
-
-### Prérequis OIDC
-
-L'intégration OIDC nécessite :
-1. Un certificat TLS valide (ou auto-signé ajouté à la chaîne de confiance)
-2. Authentik accessible en HTTPS depuis le réseau Docker
-3. Un nom de domaine résolu entre les conteneurs
-
-### Configurer Authentik
-
-1. Se connecter à `http://localhost:9000`
-2. Aller dans **Applications** → **Fournisseurs** → **Créer**
-3. Choisir **OAuth2/OIDC**
-4. Paramètres :
-   - **Nom** : `Synapse`
-   - **Type d'autorisation** : Authorization Code
-   - **Redirect URI** : `https://messagerie.local/_synapse/client/oidc/callback`
-   - **Scopes** : `openid`, `profile`, `email`
-5. Créer l'**application** associée au fournisseur
-6. Copier le **Client ID** et le **Client Secret** dans `.env`
-
-### Activer OIDC dans Synapse
-
-Dans `data/synapse/homeserver.yaml`, décommenter et compléter :
-
-```yaml
-oidc_providers:
-  - idp_id: authentik
-    idp_name: "Authentik"
-    discover: true
-    issuer: "https://auth.messagerie.local/application/o/synapse/"
-    client_id: "VOTRE_CLIENT_ID"
-    client_secret: "VOTRE_CLIENT_SECRET"
-    scopes: ["openid", "profile", "email"]
-    user_mapping_provider:
-      config:
-        localpart_template: "{{ user.preferred_username }}"
-        display_name_template: "{{ user.name }}"
-    allow_existing_users: true
-    backchannel_logout_enabled: true
-```
-
-> ⚠️ **Ne jamais committer le client_secret dans Git.**
-
-### Problème de résolution réseau
-
-Authentik tourne dans son propre réseau Docker (`~/authentik`).
-Synapse tourne dans le réseau `msb-public`.
-
-Options pour permettre la communication :
-- **Option A (recommandée)** : Connecter les deux compositions au même
-  réseau Docker externe nommé.
-- **Option B** : Utiliser l'IP hôte (`host-gateway`) dans `extra_hosts`.
-
-Option A (à valider avant déploiement) :
-```bash
-# Créer un réseau partagé
-docker network create msb-auth-bridge
-
-# Connecter Authentik au réseau partagé
-docker network connect msb-auth-bridge authentik-server-1
-
-# Ajouter au docker-compose.yml de Synapse
-# networks: msb-auth-bridge (réseau externe)
-```
-
----
-
-## Arrêt
-
-```bash
-docker compose down          # Arrêt (données conservées)
-```
-
-> ⚠️ Ne jamais utiliser `docker compose down -v` : cela supprimerait
-> les volumes et les données de base de données.
-
----
-
-## Dépannage
-
-| Symptôme | Cause probable | Solution |
+| Service | URL locale | Code HTTP attendu |
 |---|---|---|
-| Synapse redémarre en boucle | Mot de passe différent entre `.env` et `homeserver.yaml` | Vérifier les deux fichiers |
-| `pg_isready` échoue | PostgreSQL en cours de démarrage | Attendre 20 secondes, relancer |
-| Element ne trouve pas Synapse | URL incorrecte dans `config.json` | Vérifier `base_url` |
-| Erreur OIDC | Certificat TLS non reconnu | Ajouter le cert à la chaîne de confiance Synapse |
-| Permission denied sur docker.sock | Utilisateur pas dans le groupe docker | `sudo usermod -aG docker $USER` puis se reconnecter |
+| **Element Web** | `https://messagerie.local/` | HTTP 200 |
+| **Console FasoVoice** | `https://messagerie.local/fasovoice/` | HTTP 200 |
+| **Authentik SSO** | `https://auth.messagerie.local/` | HTTP 200 / 302 |
+| **Synapse Versions API** | `https://messagerie.local/_matrix/client/versions` | HTTP 200 (JSON) |
+
+---
+
+## 6. Comptes de Démonstration
+
+Les identifiants générés localement sont consignés dans le fichier sécurisé :  
+`~/messagerie_souveraine_bf/.credentials_demo.local` (permissions `chmod 600`) :
+- `alice_demo` : Rôle Responsable ministériel (OIDC + TOTP)
+- `bob_demo` : Rôle Agent de terrain (OIDC + TOTP)
+- `charlie_demo` : Rôle Collaborateur cellule (OIDC + TOTP)
+- `admin` : Compte d'administration locale d'urgence
+
+---
+
+## 7. Arrêt et Désinstallation Sécurisée
+
+Pour arrêter l'ensemble des conteneurs sans perdre vos données ni volumes :
+```bash
+./scripts/uninstall.sh
+```
+Ce script garantit la préservation intégrale des bases de données PostgreSQL, des historiques chiffrés et des configurations.

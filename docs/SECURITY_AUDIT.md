@@ -1,86 +1,126 @@
-# Audit de Sécurité de la Plateforme — Messagerie Souveraine BF
-*Évaluation de la posture de sécurité, matrice des risques et recommandations*
-*Date d'audit : 1er Novembre 2026*
+# Note de Sécurité et Minimisation des Métadonnées
+## Messagerie Souveraine BF — Hackathon 226 (Édition 2026)
+*Conforme aux exigences de la Section ❸ du règlement officiel (Note de sécurité de 2 pages)*  
+*Date d'audit & version : 1er Novembre 2026 — v2.0*
 
 ---
 
-## 1. Périmètre de l'Audit
+## 1. Périmètre du Système
 
-L'audit couvre l'intégralité des briques logicielles composant la plateforme **Messagerie Souveraine BF** :
-- **Serveur de messagerie :** Matrix Synapse v1.164.1
-- **Client utilisateur :** Element Web v1.11.109
-- **Base de données :** PostgreSQL 16-alpine
-- **Fournisseur d'identité (IdP) :** Authentik 2026.8.5
-- **Reverse Proxy / Terminaison TLS :** Nginx 1.27-alpine
-- **Orchestration :** Docker & Docker Compose sur Linux Ubuntu 24.04
+La plateforme **Messagerie Souveraine BF** comprend l'intégralité des briques logicielles suivantes, hébergées en environnement clos sans aucune dépendance à des services cloud tiers :
+- **Serveur de messagerie :** Matrix Synapse v1.164.1 durci.
+- **Client utilisateur :** Element Web v1.11.109 personnalisé.
+- **Fournisseur d'identité (IdP) :** Authentik 2026.8.5 avec flux OIDC PKCE.
+- **Base de données persistante :** PostgreSQL 16 (réseau interne isolé).
+- **Reverse proxy & terminaison TLS :** Nginx 1.27 (TLS 1.2/1.3, ports 127.0.0.1).
+- **Module d'innovation multilingue :** Console de crise locale FasoVoice.
 
 ---
 
-## 2. Synthèse de la Posture de Sécurité
+## 2. Actifs à Protéger
 
-| Domaine | Niveau de conformité | Observations principales |
+1. **Confidentialité des échanges :** Contenu textuel des conversations, notes de service et documents échangés entre agents de l'État.
+2. **Intégrité des pièces jointes :** Fichiers confidentiels, ordres de mission, cartes d'intervention.
+3. **Identité et habilitations des agents :** Annuaire d'État, identifiants, facteurs d'authentification (mots de passe hachés, secrets TOTP).
+4. **Disponibilité opérationnelle :** Continuité de service de la messagerie en cas de crise ou d'incident réseau extérieur.
+5. **Clés cryptographiques souveraines :** Clés privées de signature du homeserver (`*.signing.key`), clés d'identité des sessions.
+
+---
+
+## 3. Menaces Identifiées (Modèle de Menaces)
+
+| Menace | Vecteur d'attaque | Niveau de risque |
 |---|---|---|
-| **Contrôle d'accès & Inscription** | **Conforme** | Inscriptions publiques désactivées (`enable_registration: false`), utilisateurs invités désactivés (`allow_guest_registration: false`). |
-| **Authentification & MFA** | **Conforme** | Délégation OIDC vers Authentik avec MFA TOTP obligatoire (RFC 6238). Protection anti-rejeu des jetons temporels. |
-| **Confidentialité des échanges** | **Conforme** | Chiffrement de bout en bout Megolm (`m.megolm.v1.aes-sha2`). Stockage exclusif de texte chiffré en base de données. |
-| **Segmentation réseau** | **Conforme** | Tous les conteneurs sont isolés sur des réseaux Docker internes (`msb-internal`, `msb-auth-bridge`). Aucun port applicatif sensible n'est lié sur `0.0.0.0` (liaison stricte `127.0.0.1`). |
-| **Protection des secrets** | **Conforme** | Fichiers d'environnement (`.env`) et identifiants de démonstration (`.credentials_demo.local`) exclus de Git via `.gitignore` et protégés en `chmod 600`. Sauvegardes stockées hors du dépôt (`~/backups_msb/`). |
-| **Révocation et gouvernance** | **Conforme** | Révocation immédiate d'appareils via l'API Synapse, désactivation officielle des comptes sans suppression brute en base, rejet immédiat (HTTP 403 `M_FORBIDDEN`) des tentatives d'envoi après exclusion d'un salon. |
+| **Interception réseau (Man-in-the-Middle)** | Écoute passive ou active sur le réseau local ou étatique. | Élevé |
+| **Compromission du serveur / Base de données** | Attaquant ou administrateur système indélicat accédant à PostgreSQL. | Critique |
+| **Usurpation d'identité d'un agent** | Vol de mot de passe, hameçonnage ou force brute sur les comptes. | Élevé |
+| **Intrusion d'un compte non enrôlé** | Tentative d'auto-enregistrement libre ou accès à un salon réservé. | Critique |
+| **Perte ou vol d'un terminal mobile/PC** | Accès physique non autorisé aux sessions et clés locales d'un agent. | Élevé |
+| **Fuite extraterritoriale par fédération** | Synchronisation non désirée avec un serveur Matrix étranger. | Critique |
 
 ---
 
-## 3. Matrice des Risques Résiduels
+## 4. Mesures de Protection Appliquées
 
-### A. Risques de Niveau Critique
-*Aucun risque critique non maîtrisé n'a été détecté dans la configuration actuelle.*
-
----
-
-### B. Risques de Niveau Élevé
-
-#### R-01 : Clé de Signature Synapse locale (Environnement Prototype)
-- **Description :** Le serveur Synapse utilise une clé locale générée pour signer les événements du homeserver (`messagerie.local.signing.key`).
-- **Impact :** Si cette clé venait à être compromise, un attaquant pourrait forger des événements au nom du serveur local.
-- **Mesure d'atténuation appliquée :** La clé réside dans le volume `data/` exclu de Git, avec permissions restreintes à l'utilisateur système Synapse (UID 991).
-- **Recommandation pour la production :** Intégrer un HSM (Hardware Security Module) ou un coffre-fort de secrets (HashiCorp Vault) pour la gestion du cycle de vie des clés de signature.
-
-#### R-02 : Certificats TLS de développement (mkcert)
-- **Description :** Les certificats TLS utilisés sont émis par une autorité locale de développement (`mkcert development CA`).
-- **Impact :** Ces certificats sont reconnus uniquement sur les postes de travail où l'autorité a été injectée dans la base NSS du navigateur.
-- **Mesure d'atténuation appliquée :** Injection ciblée dans Firefox Snap (`cert9.db`) et création d'un bundle CA système pour les appels cURL/Python.
-- **Recommandation pour la production :** Déployer une PKI institutionnelle d'État (ANSSI-BF ou PKI nationale souveraine) ou des certificats X.509 d'une autorité reconnue publiquement avec renouvellement automatique Let's Encrypt / ACME.
+- **Chiffrement fort de bout en bout (E2EE) :** Algorithme Megolm v1 AES-SHA2 appliqué par défaut à tous les salons.
+- **Double facteur d'authentification obligatoire :** Imposition du TOTP dynamique (RFC 6238) via Authentik pour tous les agents.
+- **Fermeture stricte des enregistrements :** `enable_registration: false` et `allow_guest_registration: false` dans Synapse.
+- **Segmentation réseau étanche :** La base PostgreSQL ne possède aucun port publié vers l'hôte. Nginx lie les ports applicatifs strictement sur `127.0.0.1`.
+- **Désactivation totale de la fédération :** `federation_domain_whitelist: []` et retrait des ressources de fédération du listener.
+- **Limitation de débit (Rate-Limiting) :** Configuration `rc_login` anti-bruteforce active sur Synapse et Authentik.
 
 ---
 
-### C. Risques de Niveau Moyen
+## 5. Chiffrement de Bout en Bout (Messages)
 
-#### R-03 : Découplage de la révocation globale des sessions Authentik vers Synapse
-- **Description :** La désactivation d'un compte dans Authentik empêche toute nouvelle authentification SSO/OIDC. Toutefois, les sessions Matrix déjà émises (access tokens actifs) conservent leur validité jusqu'à leur expiration ou leur révocation administrative explicite dans Synapse.
-- **Impact :** Un agent révoqué dans Authentik pourrait théoriquement continuer à émettre des messages via sa session locale Matrix tant que son token n'est pas révoqué dans Synapse.
-- **Mesure d'atténuation appliquée :** Procédure documentée de double révocation (désactivation du compte dans Authentik + appel de l'API Synapse `POST /_synapse/admin/v1/deactivate/<user_id>`).
-- **Recommandation pour la production :** Activer et tester le protocole OIDC Backchannel Logout (RFC draft) pour notifier automatiquement Synapse lors de la clôture d'une session dans Authentik.
-
-#### R-04 : Dépendance au bridge réseau entre Compose Authentik et Compose Messagerie
-- **Description :** Authentik et Messagerie Souveraine BF fonctionnent dans deux projets Docker Compose distincts, reliés par un réseau externe `msb-auth-bridge`.
-- **Impact :** Si le réseau bridge n'est pas initialisé avant le lancement des conteneurs, Synapse ne peut pas contacter Authentik (`OidcDiscoveryError`).
-- **Mesure d'atténuation appliquée :** Les scripts de démarrage et de healthcheck contrôlent systématiquement la connectivité inter-conteneurs.
-- **Recommandation pour la production :** Unifier les fichiers d'orchestration ou déployer l'architecture sous Kubernetes avec des NetworkPolicies adaptées.
+Les messages échangés entre agents sont chiffrés directement dans le navigateur client par la bibliothèque Megolm :
+- Le serveur Synapse ne reçoit que des événements de type `m.room.encrypted`.
+- Dans la base PostgreSQL, le champ `ciphertext` stocke exclusivement des blocs binaires chiffrés en base64.
+- Le serveur ne possède pas la clé de déchiffrement de session Megolm. Même sous contrainte judiciaire ou intrusion physique dans le serveur, le texte des messages est illisible.
 
 ---
 
-### D. Risques de Niveau Faible
+## 6. Gestion des Identités et Rôles
 
-#### R-05 : Taux de limitation de requêtes assoupli pour démonstration locale
-- **Description :** Les paramètres `rc_login` de Synapse ont été ajustés (`per_second: 10`, `burst_count: 100`) pour permettre l'enchaînement rapide des tests automatisés de démonstration sans déclencher de blocage intempestif.
-- **Impact :** Résistance moindre aux attaques automatisées par force brute en cas d'exposition directe.
-- **Mesure d'atténuation appliquée :** L'interface Synapse n'est accessible que sur `127.0.0.1` à travers Nginx.
-- **Recommandation pour la production :** Réduire les limites `rc_login` à `per_second: 1` et `burst_count: 5`, et coupler avec un module Fail2ban ou un WAF frontal.
+- L'authentification est déléguée à Authentik via le protocole OIDC avec échange PKCE (Proof Key for Code Exchange).
+- Les comptes sont provisionnés nominativement par l'administration dans le groupe `Agents Messagerie Souveraine`.
+- Seul un compte administrateur d'urgence natif (`@admin:messagerie.local`) dispose d'une clé de secours locale pour les opérations de maintenance de l'API.
 
 ---
 
-## 4. Recommandations Prioritaires pour le Passage en Production
+## 7. Protection des Fichiers et Pièces Jointes
 
-1. **Intégration d'une PKI Nationale :** Remplacer les certificats mkcert par des certificats X.509 délivrés par l'autorité de certification souveraine du Burkina Faso.
-2. **Synchronisation LDAP / Annuaire d'État :** Relier Authentik à l'annuaire d'État (OpenLDAP / Active Directory ministériel) pour automatiser le cycle de vie des agents (onboarding / offboarding).
-3. **Journalisation Centralisée et SIEM :** Exporter les journaux d'audit Synapse, Nginx et Authentik vers un SIEM souverain (Wazuh / OpenSearch) pour la détection proactive des anomalies de sécurité.
-4. **Sauvegardes Chiffrées Hors Site :** Automatiser la réplication chiffrée des dumps PostgreSQL vers un site de secours distant géographiquement distinct.
+- **Chiffrement symétrique côté client :** Chaque fichier est chiffré en AES-256-CTR par le client avant téléversement vers `/_matrix/media/v3/upload`.
+- **Isolation des clés :** La clé de déchiffrement (256 bits), le vecteur d'initialisation (IV) et le condensat SHA-256 sont encapsulés dans le message Megolm, transmis uniquement aux membres autorisés du salon.
+- **Stockage serveur opaque :** Le répertoire `/data/media_store` de Synapse ne contient que des flux d'octets chiffrés, inutilisables sans la clé détenue par les terminaux.
+
+---
+
+## 8. Fédération et Souveraineté Territoriale
+
+Pour garantir l'autonomie stratégique du Burkina Faso :
+- Toute fédération inter-domaines est bloquée par la directive `federation_domain_whitelist: []`.
+- Les requêtes sur les endpoints `/_matrix/federation/` sont rejetées (HTTP 404 / 403). Aucune métadonnée ni événement ne transite hors du périmètre national.
+
+---
+
+## 9. Journalisation et Traçabilité
+
+- Les journaux Synapse et Authentik consignent les événements de connexion, les échecs d'authentification et les adresses IP clientes.
+- Les requêtes sensibles sont tracées avec un identifiant de corrélation (`Synapse-Trace-Id`).
+- Aucun secret, mot de passe ou clé cryptographique n'est écrit dans les logs applicatifs.
+
+---
+
+## 10. Métadonnées Visibles par le Serveur et Minimisation
+
+Le chiffrement de bout en bout protège le **contenu** des messages, mais **ne garantit pas l'anonymat absolu** des échanges. Par conception du protocole Matrix, le serveur et les administrateurs ont visibilité sur les métadonnées suivantes :
+
+| Métadonnée visible | Nature et visibilité par le serveur | Mesure de minimisation appliquée |
+|---|---|---|
+| **Identifiants des correspondants** | Le serveur sait quel agent (`@alice_demo`) échange dans quel salon (`!room_id`). | Salons privés stricts, pas d'annuaire public, pseudonymes opérationnels possibles. |
+| **Horodatage des messages** | Date, heure et seconde de chaque envoi (`stream_ordering`, `origin_server_ts`). | Nécessaire au séquencement distribué des événements. |
+| **Volume et taille des messages** | Taille en octets du bloc chiffré (ex: 424 octets). | Le chiffrement par blocs et le padding masquent la longueur exacte du texte en clair. |
+| **Taille des pièces jointes** | Taille du fichier chiffré stocké dans le media store. | Fichiers chiffrés sans extension apparente sur le système de fichiers serveur. |
+| **Adresses IP des clients** | Enregistrées dans les en-têtes réseau Nginx (`$remote_addr`) et Synapse. | Masquage interne derrière le reverse proxy local, purge périodique des tables de logs. |
+| **Topologie des salons** | Liste des membres ayant rejoint ou quitté un salon (`m.room.member`). | Directive `forget_rooms_on_leave: true` pour purger la mémoire d'appartenance après kick. |
+
+---
+
+## 11. Limites de Sécurité Connues (Transparence Technique)
+
+1. **Stockage local des clients (IndexedDB) :**
+   - Lorsqu'un agent déchiffre un message, celui-ci est mis en cache dans la base locale (IndexedDB) de son navigateur.
+   - **Conséquence :** Une révocation administrative coupe instantanément l'envoi et la réception de tout *nouveau* message, mais ne peut pas effacer à distance les messages déjà déchiffrés stockés sur le terminal sans agent MDM (Mobile Device Management) sur le système hôte.
+2. **Certificats TLS de développement :**
+   - L'environnement de démonstration utilise une autorité racine locale (mkcert / OpenSSL). Pour un passage en production à l'échelle nationale, une PKI d'État (ANSSI-BF) devra émettre les certificats X.509 officiels.
+3. **Résolution DNS locale :**
+   - Les noms `messagerie.local` et `auth.messagerie.local` dépendent de la résolution statique `/etc/hosts` sur les machines clientes.
+
+---
+
+## 12. Risques Résiduels et Recommandations pour la Production
+
+1. **Intégration d'un HSM (Hardware Security Module) :** Sécuriser la clé de signature Synapse (`signing.key`) dans un boîtier cryptographique certifié.
+2. **Couplage OIDC Backchannel Logout :** Automatiser la purge des sessions Synapse dès la déconnexion dans Authentik.
+3. **Déploiement d'un agent MDM souverain :** Compléter la plateforme avec un gestionnaire de flotte pour effacer à distance les caches locaux en cas de vol de terminal.

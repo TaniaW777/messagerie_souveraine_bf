@@ -65,3 +65,10 @@ node_modules/
 # Identifiants locaux securises de demonstration
 .credentials*
 *.local.txt
+
+# ============================================================
+# PACK HORS-LIGNE — Images Docker et doublons de médias
+# ============================================================
+offline-demo/images/*.tar.gz
+offline-demo/demo/fasovoice/audio/*.mp3
+

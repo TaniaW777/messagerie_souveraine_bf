@@ -1,0 +1,79 @@
+{
+  "version": "1.0",
+  "project": "FASOVOICE — Messagerie Souveraine BF",
+  "languages": {
+    "fr": "Français",
+    "mo": "Mooré",
+    "di": "Dioula"
+  },
+  "alerts": [
+    {
+      "id": "ALERT-SEC-01",
+      "severity": "URGENCE",
+      "category": "Sécurité / Attaque",
+      "fr": {
+        "title": "ALERTE SÉCURITÉ IMMÉDIATE",
+        "message": "Incident sécuritaire signalé dans le secteur. Confinement immédiat dans les bâtiments et application stricte des consignes de sécurité."
+      },
+      "mo": {
+        "title": "BÃMB KÉESE MASÃ",
+        "message": "Yél-beed n zĩnd zĩigã pʋgẽ. Yik-y n kẽ y roogẽ masã n kẽes y meng bãane tɩ y gũusd bãngr nina b sẽn kɩt tɩ b gũusdã."
+      },
+      "di": {
+        "title": "KASOROBARA LAKANANI SISAN",
+        "message": "Kɛlɛ fɔli don yɔrɔ la. Aw bɛɛ ye aw dogo so kɔnɔ k'aw yɛrɛ lakanara sisan ka ta lakanani sariyaw fɛ."
+      }
+    },
+    {
+      "id": "ALERT-EVAC-02",
+      "severity": "URGENCE",
+      "category": "Évacuation d'urgence",
+      "fr": {
+        "title": "ORDRE D'ÉVACUATION D'URGENCE",
+        "message": "Évacuation immédiate de tous les agents par les issues de secours balisées. Rassemblement au point de regroupement officiel."
+      },
+      "mo": {
+        "title": "YIKR NOORE MASÃ",
+        "message": "Yik-y yɩlem n yii roogã pʋgẽ n tũ sor-tẽng bãngr nina b sẽn wilgi. Tigim-y zĩig nina b sẽn yãk tɩ d na n tigimẽ wã."
+      },
+      "di": {
+        "title": "BƆLILAKAN SISAN",
+        "message": "Aw bɛɛ ka bɔ so kɔnɔ k'a bila siraw fɛ minnu jira lakanani bolo. Aw bɛɛ ka lajɛ yɔrɔ lakanani lɔnnen na."
+      }
+    },
+    {
+      "id": "ALERT-METEO-03",
+      "severity": "VIGILANCE",
+      "category": "Météo / Inondation",
+      "fr": {
+        "title": "VIGILANCE INONDATION ET INTEMPÉRIES",
+        "message": "Fortes précipitations et risques d'inondation majeure. Mettez les documents sensibles en sécurité et évitez tout déplacement non indispensable."
+      },
+      "mo": {
+        "title": "SAAG LA KOOM GŨUSGU",
+        "message": "Sa-tɛɛg kãseng n wat tɩ koom tõe n pid zĩigã. Gũus-y seb-kãsemsã tɩ koom da sãam-b ye, la y gũus y meng kẽnd wɛɛngẽ."
+      },
+      "di": {
+        "title": "SANJI KƆLƆSI SISAN",
+        "message": "Sanji belebele bɛ se ka bɔ, ji bɛ se ka faso pan. Aw ye sɛbɛ nafamaw lakana k'aw kana bɔ n ta yɔrɔ wɛrɛ."
+      }
+    },
+    {
+      "id": "ALERT-END-04",
+      "severity": "INFO",
+      "category": "Fin d'incident / Normalisation",
+      "fr": {
+        "title": "FIN D'ALERTE — RETOUR À LA NORMALE",
+        "message": "Situation totalement maîtrisée par les forces compétentes. Fin du confinement et reprise normale et sereine des activités administratives."
+      },
+      "mo": {
+        "title": "BÃMB SÃAMBU — BÃANE LEBA",
+        "message": "Bãan leba n waame tɩ fãng solembã gũusd zĩigã tɩ yel-beed ka le ye. B tõe n lebg n sɩng tʋʋmã tɩ yĩn-sid sãane."
+      },
+      "di": {
+        "title": "LAKANANI LABAN — HƐRƐ KƆSƐBƐ",
+        "message": "Kɛlɛ ban na poyipoyi, sɔrɔdasidenw bɛ yɔrɔ bɛɛ la. Aw bɛ se ka bɔ ka ta yɛrɛ ka yɛrɛ baaraw kɛ k'a bɛɛ to hɛrɛ la."
+      }
+    }
+  ]
+}

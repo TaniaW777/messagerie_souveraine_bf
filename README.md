@@ -1,228 +1,150 @@
 # Messagerie Souveraine BF
+**Prototype officiel de messagerie instantanée souveraine pour l'administration publique du Burkina Faso.**  
+*Projet développé dans le cadre du Hackathon 226 — Édition 2026 (MTDPCE / DGTD)*  
+*Niveau d'engagement open source : « Étendre et adapter » (Matrix Synapse & Element Web)*  
 
-**Prototype de messagerie instantanée souveraine pour l'administration publique du Burkina Faso.**
-
-Basée sur Matrix (Synapse + Element Web), avec chiffrement de bout en bout et authentification forte via Authentik, déployable avec Docker Compose.
+[![Licence](https://img.shields.io/badge/Licence-Apache%202.0-blue.svg)](LICENSE)
+[![Sécurité](https://img.shields.io/badge/Chiffrement-Megolm%20E2EE-green.svg)](docs/SECURITY_AUDIT.md)
+[![Authentification](https://img.shields.io/badge/MFA-OIDC%20%2B%20TOTP-orange.svg)](tests/mfa/README.md)
+[![Innovation](https://img.shields.io/badge/Innovation-FasoVoice%20Multilingue-red.svg)](demo/fasovoice/)
 
 ---
 
-## Architecture
+## 1. Problème et Solution
+
+### Le problème
+Les agents publics de l'État burkinabè recourent quotidiennement à des applications grand public commerciales (WhatsApp, Telegram) hébergées à l'étranger. Cette pratique crée une vulnérabilité stratégique : dépendance d'infrastructures extraterritoriales, risques d'interception et impossibilité de révoquer centralement les accès lors du départ d'un agent.
+
+### La solution
+**Messagerie Souveraine BF** est une solution de communication instantanée étatique complète, autonome et déployable sur l'infrastructure souveraine de l'État burkinabè :
+- **Chiffrement de bout en bout inviolable :** Olm/Megolm v1 AES-SHA2 appliqué par défaut à tous les salons.
+- **Identité forte et vérifiée :** Inscription publique fermée ; délégation OIDC vers l'IdP Authentik avec double facteur TOTP (RFC 6238) obligatoire.
+- **Révocation immédiate :** Coupure réseau instantanée côté serveur lors de l'exclusion d'un agent ou de la désactivation d'un compte (HTTP 403 `M_FORBIDDEN`).
+- **Autonomie territoriale :** Fédération désactivée (`federation_domain_whitelist: []`), aucune fuite de métadonnées hors du périmètre national.
+- **Innovation FASOVOICE :** Console de crise multilingue avec diffusion d'alertes en **Français**, **Mooré** et **Dioula** et synthèse vocale locale sans API externe.
+
+---
+
+## 2. Architecture et Technologies
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        UTILISATEUR                          │
+│                 UTILISATEUR (Navigateur Web)                │
 └──────────────────────────┬──────────────────────────────────┘
-                           │ HTTPS (TLS mkcert)
+                           │ HTTPS (TLS 1.3 / messagerie.local)
                     ┌──────▼──────┐
-                    │ Nginx Proxy │  https://messagerie.local (443)
-                    │ (msb-proxy) │  https://auth.messagerie.local (443)
+                    │ Nginx Proxy │  Terminaison TLS locale & reverse proxy
+                    │ (msb-proxy) │  https://messagerie.local (Port 443)
                     └──────┬──────┘
              ┌─────────────┴─────────────┐
              │                           │
       ┌──────▼──────┐             ┌──────▼──────┐
-      │ Element Web │             │   Synapse   │
-      │ (msb-element)             │(msb-synapse)│
-      └─────────────┘             └──────┬──────┘
+      │ Element Web │             │   Synapse   │  Serveur Matrix v1.164.1
+      │  (Client)   │             │ (msb-synapse│  Fédération coupée
+      └─────────────┘             └──────┬──────┘  Chiffrement forcé
                                   ┌──────┴─────────────┐
-                                  │                    │
                            ┌──────▼──────┐      ┌──────▼──────┐
-                           │ PostgreSQL  │      │  Authentik  │
-                           │(msb-postgres│      │ (OIDC + MFA)│
+                           │ PostgreSQL  │      │  Authentik  │ IdP OIDC + MFA
+                           │(msb-postgres│      │ (Port 9000) │ (msb-auth-bridge)
                            └─────────────┘      └─────────────┘
-                             (interne)           port 9000/9443
-                                                (127.0.0.1)
+                             (interne)
 ```
 
-## Technologies
+| Composant | Version | Licence OSI | Rôle opérationnel |
+|---|---|---|---|
+| **Matrix Synapse** | `v1.164.1` | Apache 2.0 | Homeserver souverain, gestion des salons et clés cryptographiques. |
+| **Element Web** | `v1.11.109` | Apache 2.0 | Interface web sécurisée, déchiffrement Megolm local dans le navigateur. |
+| **Authentik** | `2026.8.5` | MIT | Fournisseur d'identité étatique OIDC avec second facteur TOTP obligatoire. |
+| **PostgreSQL** | `16-alpine` | PostgreSQL Lic. | Base relationnelle persistante isolée (seuls des ciphertexts sont stockés). |
+| **Nginx** | `1.27-alpine` | 2-clause BSD | Reverse proxy frontal durci (liaison stricte `127.0.0.1`). |
+| **FasoVoice** | `v1.0` | Apache 2.0 | Console de crise multilingue (Mooré, Dioula, Français) & lecture vocale. |
 
-| Composant | Version | Rôle |
-|-----------|---------|------|
-| Matrix Synapse | 1.164.1 | Serveur de messagerie souverain |
-| Element Web | 1.11.109 | Interface utilisateur sécurisée |
-| PostgreSQL | 16-alpine | Base de données relationnelle |
-| Authentik | 2026.8.5 | Fournisseur d'identité OIDC + MFA TOTP |
-| Nginx Reverse Proxy | 1.27-alpine | Terminaison TLS HTTPS locale (mkcert) |
-| Docker Compose | v2 | Orchestration des conteneurs |
+---
 
-## Fonctionnalités
+## 3. Installation et Démarrage Reproductible (Une Seule Commande)
 
-| Fonctionnalité | État |
-|----------------|------|
-| Messagerie avec chiffrement E2EE (Olm/Megolm) | ✅ Opérationnel & validé |
-| Inscriptions publiques désactivées | ✅ Actif (`enable_registration: false`) |
-| Création de comptes par l'administrateur | ✅ Opérationnel (API & OIDC) |
-| Désactivation d'un compte avec révocation immédiate | ✅ Testé & validé (API Synapse) |
-| MFA TOTP obligatoire via Authentik | ✅ Opérationnel & testé |
-| Intégration OIDC Authentik ↔ Synapse (PKCE) | ✅ Opérationnel & testé de bout en bout |
-| Révocation ciblée d'appareil / session | ✅ Testé & validé (API Synapse) |
-| Terminaison HTTPS locale (mkcert) | ✅ Opérationnel (`messagerie.local`) |
-| Isolation réseau locale (127.0.0.1) | ✅ Strictement appliqué sur tous les ports |
+### Prérequis
+- Linux (Ubuntu 22.04 / 24.04 ou Debian 12 recommandé)
+- Docker Engine ≥ 24 et plugin Docker Compose v2
+- OpenSSL et Python 3
+- 4 à 8 Go de mémoire RAM disponible
 
-## Prérequis
-
-- Docker Engine ≥ 24 + Docker Compose v2
-- RAM disponible : ~4 Go minimum (Synapse + PostgreSQL + Element)
-- Ports libres : 8008, 8081
-- Git
-
-> **Note RAM** : Authentik (installé séparément) consomme ~2-3 Go.
-> Ne pas lancer tous les services simultanément si la RAM < 7,5 Go.
-
-## Installation
-
-### 1. Cloner le projet
-
+### 1. Cloner le dépôt et entrer dans le répertoire
 ```bash
 git clone https://github.com/TaniaW777/messagerie_souveraine_bf.git
 cd messagerie_souveraine_bf
 git checkout develop
 ```
 
-### 2. Configurer l'environnement
+### 2. Configurer la résolution DNS locale (`/etc/hosts`)
+Ajouter dans `/etc/hosts` sur la machine hôte :
+```text
+127.0.0.1   messagerie.local auth.messagerie.local
+```
 
+### 3. Lancer l'installation automatisée
 ```bash
-cp .env.example .env
+./scripts/install.sh
 ```
+Ce script vérifie les dépendances, génère les secrets locaux (`.env`), crée le réseau inter-projets `msb-auth-bridge`, génère les certificats TLS (`certs/`), initialise Authentik, démarre Synapse, Element et Nginx, et valide l'ensemble par un contrôle de santé.
 
-Éditer `.env` et remplacer **toutes** les valeurs `CHANGE_ME` par des valeurs sécurisées.
+---
 
-Pour générer des secrets aléatoires :
-```bash
-python3 -c "import secrets; print(secrets.token_urlsafe(64))"
-```
+## 4. Points d'Accès et Comptes de Démonstration
 
-### 3. Créer les dossiers de données
-
-```bash
-mkdir -p data/synapse data/postgres
-```
-
-### 4. Générer la configuration Synapse (première fois uniquement)
-
-```bash
-docker run --rm \
-  -v "$(pwd)/data/synapse:/data" \
-  -e SYNAPSE_SERVER_NAME=messagerie.local \
-  -e SYNAPSE_REPORT_STATS=no \
-  matrixdotorg/synapse:v1.164.1 generate
-```
-
-Cela crée `data/synapse/homeserver.yaml`, `messagerie.local.log.config` et `messagerie.local.signing.key`.
-
-### 5. Configurer Synapse
-
-Copier le modèle comme référence et adapter `data/synapse/homeserver.yaml` :
-
-```bash
-# Vérifier la configuration de référence
-cat config/synapse/homeserver.yaml.example
-```
-
-Points clés à vérifier dans `data/synapse/homeserver.yaml` :
-- `database` : bloc PostgreSQL avec le mot de passe du `.env`
-- `enable_registration: false`
-- `x_forwarded: false` (sauf si proxy nginx configuré)
-
-### 6. Résolution DNS locale
-
-Ajouter dans `/etc/hosts` :
-```
-127.0.0.1   messagerie.local
-```
-
-### 7. Démarrer les services
-
-```bash
-docker compose up -d
-docker compose ps
-```
-
-### 8. Créer les comptes
-
-```bash
-# Compte administrateur
-docker exec -it msb-synapse register_new_matrix_user \
-  -c /data/homeserver.yaml \
-  -u admin -a \
-  http://localhost:8008
-
-# Compte utilisateur standard
-docker exec -it msb-synapse register_new_matrix_user \
-  -c /data/homeserver.yaml \
-  -u alice --no-admin \
-  http://localhost:8008
-```
-
-### 9. Vérification
-
-| Vérification | Commande | Résultat attendu |
+### URLs de la plateforme
+| Service | URL locale | Rôle |
 |---|---|---|
-| API Synapse | `curl http://localhost:8008/_matrix/client/versions` | JSON versions Matrix |
-| Tables PostgreSQL | `docker exec msb-postgres psql -U synapse -d synapse -c "\dt"` | Liste des tables |
-| Interface Element | `http://localhost:8081` | Page "Messagerie Souveraine BF" |
+| **Element Web** | `https://messagerie.local` | Messagerie sécurisée chiffrée |
+| **Console FasoVoice** | `https://messagerie.local/fasovoice/` | Diffusion multilingue & mode crise |
+| **Authentik SSO** | `https://auth.messagerie.local` | Gestion d'identité & validation TOTP |
+| **API Matrix** | `https://messagerie.local/_matrix/client/versions` | Sondes et intégrations |
 
-## Administration
+### Comptes pré-configurés
+Les identifiants et secrets TOTP sont stockés localement sur la machine hôte dans `.credentials_demo.local` (`chmod 600`, exclu de Git) :
+- **`alice_demo`** (Responsable cellule de crise) : Connexion OIDC + TOTP dynamique.
+- **`bob_demo`** (Agent d'intervention) : Connexion OIDC + TOTP dynamique.
+- **`charlie_demo`** (Collaborateur cellule) : Connexion OIDC + TOTP dynamique.
+- **`admin`** (Administrateur système d'urgence) : Compte d'API local de secours.
 
-### Désactiver un compte
+---
 
+## 5. Innovation : FASOVOICE (Multilingue & Vocal)
+
+En situation de crise nationale, la clarté et la rapidité des ordres sont vitales. La console **FasoVoice** (`https://messagerie.local/fasovoice/` ou `python3 scripts/fasovoice_alert.py demo`) permet à un coordinateur de :
+1. Diffuser instantanément des alertes certifiées en **Français**, **Mooré** et **Dioula**.
+2. Écouter vocalement l'instruction grâce au moteur audio souverain local (Web Speech / Web Audio, sans aucune API cloud payante).
+3. Suivre en temps réel les accusés de réception horodatés des agents sur le terrain.
+
+---
+
+## 6. Vérification et Suite de Tests de Sécurité
+
+Exécuter le banc de test automatisé couvrant l'épreuve Intrus et le chiffrement des fichiers :
 ```bash
-# Obtenir un token admin (authentification locale)
-TOKEN=$(curl -s -X POST http://localhost:8008/_matrix/client/v3/login \
-  -H "Content-Type: application/json" \
-  -d '{"type":"m.login.password","user":"admin","password":"MOT_DE_PASSE"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-# Désactiver alice
-curl -X POST \
-  "http://localhost:8008/_synapse/admin/v1/deactivate/@alice:messagerie.local" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"erase": false}'
+python3 tests/test_matrix_security.py
 ```
+*Couverture :*
+- Rejet inscription publique (`HTTP 403 M_FORBIDDEN`)
+- Rejet attaquant non enrôlé (`HTTP 403 M_FORBIDDEN`)
+- Coupure stricte de la fédération (`HTTP 404 M_UNRECOGNIZED`)
+- Chiffrement client AES-256-CTR, upload media store opaque, déchiffrement vérifié
+- Rejet d'accès et d'envoi dans les salons privés non invités
 
-### Lister les utilisateurs
+---
 
-```bash
-curl "http://localhost:8008/_synapse/admin/v2/users?limit=10" \
-  -H "Authorization: Bearer $TOKEN"
-```
+## 7. Limites Connues et Transparence Technique
 
-## Sécurité
+1. **Cache local des navigateurs (IndexedDB) :** La révocation d'un agent coupe instantanément tout flux réseau, mais ne peut pas effacer rétroactivement les anciens messages déjà déchiffrés stockés dans le navigateur du client sans agent MDM.
+2. **Certificats de développement :** Les certificats fournis reposent sur une autorité locale de démonstration (mkcert / OpenSSL) ; un déploiement national nécessitera la PKI d'État (ANSSI-BF).
+3. **Résolution DNS :** Utilise `/etc/hosts` en local.
 
-- Les inscriptions publiques sont désactivées.
-- PostgreSQL n'est pas exposé sur l'hôte (réseau interne Docker).
-- Synapse et Element n'écoutent que sur `127.0.0.1` (pas `0.0.0.0`).
-- Les secrets ne doivent jamais être commités dans Git.
-- Voir `docs/security/README.md` pour la politique de sécurité complète.
+---
 
-## Limites connues
+## 8. Documents Officiels du Dossier de Candidature
 
-1. **Révocation E2EE et cache local** : La révocation d'accès invalide immédiatement les jetons d'accès et bloque la réception/émission réseau, mais ne peut pas purger rétroactivement les messages déjà déchiffrés et stockés dans la base locale (IndexedDB) du navigateur du client.
-2. **Pas de fédération externe** : Désactivée intentionnellement pour garantir la souveraineté stricte du périmètre national (`default_federate: false`).
-3. **Résolution DNS locale** : Les noms de domaine `messagerie.local` et `auth.messagerie.local` nécessitent une entrée dans le fichier `/etc/hosts` de chaque machine accédant au service.
-
-## Structure du projet
-
-```
-messagerie_souveraine_bf/
-├── docker-compose.yml          # Orchestration des services avec healthchecks
-├── .env.example                # Modèle de configuration (sans secrets)
-├── config/
-│   ├── element/config.json     # Configuration Element Web (branding souverain)
-│   ├── synapse/
-│   │   └── homeserver.yaml.example  # Modèle Synapse (sans secrets)
-│   └── nginx/
-│       └── nginx.conf          # Configuration reverse proxy HTTPS local
-├── data/                       # Données persistantes (gitignored)
-│   ├── synapse/                # homeserver.yaml réel, clés, médias
-│   └── postgres/               # Données PostgreSQL
-├── docs/
-│   ├── installation.md         # Guide d'installation détaillé
-│   ├── security/README.md      # Politique de sécurité
-│   └── TESTS_MANUELS_DEMONSTRATION.md # Guide des tests manuels pas-à-pas
-├── tests/
-│   ├── mfa/README.md           # Scénarios tests MFA/TOTP
-│   ├── e2ee/README.md          # Scénarios tests chiffrement
-│   └── revocation/README.md    # Scénarios tests révocation
-└── demo/scenario.md            # Scénario de démonstration officiel hackathon
-```
+- [`NOTE_PRE_PROJET.md`](NOTE_PRE_PROJET.md) : Note de concept, architecture, stack et rôles (2 pages).
+- [`docs/SECURITY_AUDIT.md`](docs/SECURITY_AUDIT.md) : Note de sécurité détaillée et métadonnées (2 pages).
+- [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) : Inventaire complet des licences tierces OSI.
+- [`docs/SCENARIO_VIDEO_DEMO.md`](docs/SCENARIO_VIDEO_DEMO.md) : Conducteur vidéo chronométré (3 minutes max).
+- [`demo/scenario.md`](demo/scenario.md) : Guide détaillé des manipulations pour le jury.

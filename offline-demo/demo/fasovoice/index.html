@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FASOVOICE — Console de Crise Multilingue & Souveraine</title>
+    <style>
+        :root {
+            --bf-red: #EF3340;
+            --bf-green: #009739;
+            --bf-yellow: #FFD100;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .flag-strip {
+            display: flex;
+            flex-direction: column;
+            width: 32px;
+            height: 24px;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .flag-red { background: var(--bf-red); height: 50%; }
+        .flag-green { background: var(--bf-green); height: 50%; }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .badge-souverain {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, textarea:focus {
+            border-color: var(--bf-yellow);
+        }
+
+        .lang-pills {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .pill-btn {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .pill-btn.active {
+            background: var(--bf-red);
+            border-color: var(--bf-red);
+            color: #fff;
+        }
+
+        .preview-box {
+            background: #0b1120;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 16px;
+            min-height: 180px;
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            color: #e2e8f0;
+        }
+
+        .audio-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: rgba(255, 209, 0, 0.05);
+            border: 1px dashed var(--bf-yellow);
+            border-radius: 8px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-broadcast {
+            background: var(--bf-red);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-broadcast:hover {
+            background: #d32734;
+        }
+
+        .btn-audio {
+            background: #334155;
+            color: white;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+        }
+
+        .btn-audio:hover {
+            background: #475569;
+        }
+
+        .log-list {
+            list-style: none;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .log-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+
+        .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .log-agent {
+            font-weight: 600;
+            color: #38bdf8;
+        }
+
+        .log-status-ack {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .sev-URGENCE { background: rgba(220, 38, 38, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .sev-VIGILANCE { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+        .sev-INFO { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-title">
+            <div class="flag-strip">
+                <div class="flag-red"></div>
+                <div class="flag-green"></div>
+            </div>
+            <div>
+                <h1>FASOVOICE — Console de Crise Souveraine</h1>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Assistance à la coordination & alertes multilingues (Français / Mooré / Dioula)</p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span class="badge-souverain">Matrix E2EE Connecté</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);" id="live-clock">15:30:00 UTC</span>
+        </div>
+    </header>
+
+    <div class="grid">
+        <!-- Colonne 1 : Configuration et Diffusion -->
+        <div class="card">
+            <div class="card-header">
+                <span>Émission d'une Alerte Opérationnelle</span>
+                <span id="severity-badge" class="status-badge sev-URGENCE">URGENCE MAXIMALE</span>
+            </div>
+
+            <div class="form-group">
+                <label>Type d'Incident / Modèle de Crise</label>
+                <select id="alert-select" onchange="updateAlertPreview()">
+                    <option value="ALERT-SEC-01">ALERT-SEC-01 : Incident Sécuritaire / Confinement Immédiat</option>
+                    <option value="ALERT-EVAC-02">ALERT-EVAC-02 : Ordre d'Évacuation d'Urgence du Bâtiment</option>
+                    <option value="ALERT-METEO-03">ALERT-METEO-03 : Alerte Intempéries & Inondation Majeure</option>
+                    <option value="ALERT-END-04">ALERT-END-04 : Fin d'Alerte / Reprise Normale des Activités</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Langue(s) de Diffusion Officielle</label>
+                <div class="lang-pills">
+                    <button class="pill-btn active" onclick="setLang('all', this)">🌍 Trilingue</button>
+                    <button class="pill-btn" onclick="setLang('fr', this)">🇫🇷 Français</button>
+                    <button class="pill-btn" onclick="setLang('mo', this)">🇧🇫 Mooré</button>
+                    <button class="pill-btn" onclick="setLang('di', this)">🇧🇫 Dioula</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Aperçu du Message Transmis aux Salons Sécurisés</label>
+                <div class="preview-box" id="preview-text">Chargement du corpus...</div>
+            </div>
+
+            <!-- Contrôleur Audio Vocal Souverain Préenregistré (100% Hors-Ligne) -->
+            <div class="audio-controls" style="flex-direction: column; align-items: stretch;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--bf-yellow);">🎙️ Écoute Vocale Locale Préenregistrée (MP3 Souverain) :</span>
+                    <span id="audio-status" style="font-size: 0.75rem; color: var(--text-muted);">Prêt (Fichiers locaux)</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
+                    <button class="btn btn-audio" onclick="playPreRecorded('fr')">🇫🇷 Français</button>
+                    <button class="btn btn-audio" onclick="playPreRecorded('mo')">🇧🇫 Mooré</button>
+                    <button class="btn btn-audio" onclick="playPreRecorded('di')">🇧🇫 Dioula</button>
+                    <button class="btn btn-audio" style="background: rgba(255, 209, 0, 0.2); border-color: var(--bf-yellow);" onclick="playPreRecorded('trilingue')">🌐 Trilingue</button>
+                    <button class="btn btn-audio" onclick="stopPreRecorded()">⏹️ Arrêter</button>
+                </div>
+                <audio id="audio-player" controls style="width: 100%; margin-top: 10px; height: 36px; border-radius: 6px; display: block;"></audio>
+            </div>
+
+            <button class="btn btn-broadcast" onclick="broadcastAlert()">
+                📢 Diffuser Immédiatement sur le Canal de Crise Matrix (Texte + Audio)
+            </button>
+        </div>
+
+        <!-- Colonne 2 : Accusés de Réception et Traçabilité -->
+        <div class="card">
+            <div class="card-header">
+                <span>Accusés de Réception & Suivi des Agents</span>
+                <button class="btn btn-audio" style="font-size: 0.75rem;" onclick="simulateAck()">+ Simuler Accusé</button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-bottom: 16px; background: #0f172a; padding: 12px; border-radius: 8px;">
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Agents Notifiés</div>
+                    <div style="font-size: 1.25rem; font-weight: 700;">3 / 3</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Taux d'Accusé</div>
+                    <div style="font-size: 1.25rem; font-weight: 700; color: var(--success);" id="ack-rate">100%</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Statut Incident</div>
+                    <div style="font-size: 1.25rem; font-weight: 700; color: #38bdf8;" id="incident-state">GÉRÉ</div>
+                </div>
+            </div>
+
+            <ul class="log-list" id="ack-list">
+                <li class="log-item">
+                    <div>
+                        <div class="log-agent">@alice_demo:messagerie.local (Responsable)</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Diffusion initiale de l'instruction</div>
+                    </div>
+                    <span class="log-status-ack">ÉMIS (15:28)</span>
+                </li>
+                <li class="log-item">
+                    <div>
+                        <div class="log-agent">@bob_demo:messagerie.local (Terrain)</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">« Accusé réception OK. Équipe confinée. »</div>
+                    </div>
+                    <span class="log-status-ack">CONFIRMÉ (15:29)</span>
+                </li>
+                <li class="log-item">
+                    <div>
+                        <div class="log-agent">@charlie_demo:messagerie.local (Cellule)</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">« Vu 5 sur 5. Bâtiment sécurisé. »</div>
+                    </div>
+                    <span class="log-status-ack">CONFIRMÉ (15:30)</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let currentLang = 'all';
+        let corpusData = null;
+
+        // Corpus intégré pour fonctionnement autonome
+        const LOCAL_CORPUS = {
+            "ALERT-SEC-01": {
+                severity: "URGENCE",
+                fr: { title: "ALERTE SÉCURITÉ IMMÉDIATE", message: "Incident sécuritaire signalé dans le secteur. Confinement immédiat dans les bâtiments et application stricte des consignes de sécurité." },
+                mo: { title: "BÃMB KÉESE MASÃ", message: "Yél-beed n zĩnd zĩigã pʋgẽ. Yik-y n kẽ y roogẽ masã n kẽes y meng bãane tɩ y gũusd bãngr nina b sẽn kɩt tɩ b gũusdã." },
+                di: { title: "KASOROBARA LAKANANI SISAN", message: "Kɛlɛ fɔli don yɔrɔ la. Aw bɛɛ ye aw dogo so kɔnɔ k'aw yɛrɛ lakanara sisan ka ta lakanani sariyaw fɛ." }
+            },
+            "ALERT-EVAC-02": {
+                severity: "URGENCE",
+                fr: { title: "ORDRE D'ÉVACUATION D'URGENCE", message: "Évacuation immédiate de tous les agents par les issues de secours balisées. Rassemblement au point de regroupement officiel." },
+                mo: { title: "YIKR NOORE MASÃ", message: "Yik-y yɩlem n yii roogã pʋgẽ n tũ sor-tẽng bãngr nina b sẽn wilgi. Tigim-y zĩig nina b sẽn yãk tɩ d na n tigimẽ wã." },
+                di: { title: "BƆLILAKAN SISAN", message: "Aw bɛɛ ka bɔ so kɔnɔ k'a bila siraw fɛ minnu jira lakanani bolo. Aw bɛɛ ka lajɛ yɔrɔ lakanani lɔnnen na." }
+            },
+            "ALERT-METEO-03": {
+                severity: "VIGILANCE",
+                fr: { title: "VIGILANCE INONDATION ET INTEMPÉRIES", message: "Fortes précipitations et risques d'inondation majeure. Mettez les documents sensibles en sécurité et évitez tout déplacement non indispensable." },
+                mo: { title: "SAAG LA KOOM GŨUSGU", message: "Sa-tɛɛg kãseng n wat tɩ koom tõe n pid zĩigã. Gũus-y seb-kãsemsã tɩ koom da sãam-b ye, la y gũus y meng kẽnd wɛɛngẽ." },
+                di: { title: "SANJI KƆLƆSI SISAN", message: "Sanji belebele bɛ se ka bɔ, ji bɛ se ka faso pan. Aw ye sɛbɛ nafamaw lakana k'aw kana bɔ n ta yɔrɔ wɛrɛ." }
+            },
+            "ALERT-END-04": {
+                severity: "INFO",
+                fr: { title: "FIN D'ALERTE — RETOUR À LA NORMALE", message: "Situation totalement maîtrisée par les forces compétentes. Fin du confinement et reprise normale et sereine des activités administratives." },
+                mo: { title: "BÃMB SÃAMBU — BÃANE LEBA", message: "Bãan leba n waame tɩ fãng solembã gũusd zĩigã tɩ yel-beed ka le ye. B tõe n lebg n sɩng tʋʋmã tɩ yĩn-sid sãane." },
+                di: { title: "LAKANANI LABAN — HƐRƐ KƆSƐBƐ", message: "Kɛlɛ ban na poyipoyi, sɔrɔdasidenw bɛ yɔrɔ bɛɛ la. Aw bɛ se ka bɔ ka ta yɛrɛ ka yɛrɛ baaraw kɛ k'a bɛɛ to hɛrɛ la." }
+            }
+        };
+
+        function setLang(lang, btn) {
+            currentLang = lang;
+            document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateAlertPreview();
+        }
+
+        function updateAlertPreview() {
+            const alertId = document.getElementById('alert-select').value;
+            const alert = LOCAL_CORPUS[alertId];
+            if (!alert) return;
+
+            // Update badge
+            const badge = document.getElementById('severity-badge');
+            badge.className = `status-badge sev-${alert.severity}`;
+            badge.innerText = alert.severity === 'URGENCE' ? 'URGENCE MAXIMALE' : (alert.severity === 'VIGILANCE' ? 'VIGILANCE RENFORCÉE' : 'INFORMATION');
+
+            let text = `🚨 FASOVOICE — ALERTE OFFICIELLE NATIONALE\nRéférence : ${alertId}\n------------------------------------------------------------\n`;
+
+            if (currentLang === 'fr' || currentLang === 'all') {
+                text += `🇫🇷 FRANÇAIS :\n${alert.fr.title}\n${alert.fr.message}\n\n`;
+            }
+            if (currentLang === 'mo' || currentLang === 'all') {
+                text += `🇧🇫 MOORÉ :\n${alert.mo.title}\n${alert.mo.message}\n\n`;
+            }
+            if (currentLang === 'di' || currentLang === 'all') {
+                text += `🇧🇫 DIOULA :\n${alert.di.title}\n${alert.di.message}\n\n`;
+            }
+
+            text += `------------------------------------------------------------\n⚠️ INSTRUCTION : Tout agent recevant cette notification doit accuser réception.`;
+            document.getElementById('preview-text').innerText = text;
+        }
+
+        function playPreRecorded(lang) {
+            const alertId = document.getElementById('alert-select').value.toLowerCase();
+            const player = document.getElementById('audio-player');
+            const status = document.getElementById('audio-status');
+            const audioSrc = `/fasovoice/audio/${alertId}-${lang}.mp3`;
+
+            player.src = audioSrc;
+            status.innerText = `Lecture [${lang.toUpperCase()}] en cours...`;
+            player.play().catch(err => {
+                status.innerText = `Lecture bloquée par le navigateur: ${err.message}`;
+            });
+
+            player.onended = () => {
+                status.innerText = `Lecture [${lang.toUpperCase()}] terminée.`;
+            };
+        }
+
+        function stopPreRecorded() {
+            const player = document.getElementById('audio-player');
+            player.pause();
+            player.currentTime = 0;
+            document.getElementById('audio-status').innerText = 'Audio arrêté.';
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        function playAudioAlert() {
+            playPreRecorded('fr');
+        }
+
+        function stopAudioAlert() {
+            stopPreRecorded();
+        }
+
+        function broadcastAlert() {
+            const alertId = document.getElementById('alert-select').value;
+            alert(`[SUCCÈS SOUVERAIN]\nL'alerte ${alertId} a été transmise au serveur Matrix Synapse !\n- Diffusion vers : Salons de crise\n- Chiffrement : Megolm v1 AES-SHA2\n- Notification sonore : Déclenchée chez les destinataires.`);
+
+            const list = document.getElementById('ack-list');
+            const now = new Date().toLocaleTimeString().slice(0, 5);
+            const item = document.createElement('li');
+            item.className = 'log-item';
+            item.innerHTML = `
+                <div>
+                    <div class="log-agent">@alice_demo:messagerie.local (Responsable)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Nouvelle diffusion ${alertId} (${currentLang.toUpperCase()})</div>
+                </div>
+                <span class="log-status-ack">DIFFUSÉ (${now})</span>
+            `;
+            list.prepend(item);
+        }
+
+        function simulateAck() {
+            const list = document.getElementById('ack-list');
+            const now = new Date().toLocaleTimeString().slice(0, 5);
+            const item = document.createElement('li');
+            item.className = 'log-item';
+            item.innerHTML = `
+                <div>
+                    <div class="log-agent">@agent_${Math.floor(Math.random()*900+100)}:messagerie.local</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">« Instruction bien reçue. Mesures appliquées. »</div>
+                </div>
+                <span class="log-status-ack">CONFIRMÉ (${now})</span>
+            `;
+            list.prepend(item);
+        }
+
+        setInterval(() => {
+            document.getElementById('live-clock').innerText = new Date().toUTCString().slice(17, 25) + ' UTC';
+        }, 1000);
+
+        updateAlertPreview();
+    </script>
+</body>
+</html>

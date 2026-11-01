@@ -232,7 +232,50 @@ Lorsqu'un agent signale la perte d'un terminal (smartphone, tablette) :
 
 ---
 
-## 7. Résultats Attendus et Limites Connues (Transparence Technique)
+## 7. Innovation : FASOVOICE — Communication de Crise Multilingue & Vocale
+
+Cette séquence démontre la prise en compte du contexte linguistique et sécuritaire burkinabè (Français, Mooré, Dioula).
+
+### Étape 1 : Accès à la console souveraine FasoVoice
+1. Ouvrir le navigateur sur `https://messagerie.local/fasovoice/`.
+2. L'interface officielle aux couleurs nationales du Burkina Faso s'affiche.
+3. Constater la liste des modèles d'alerte de crise validés.
+
+### Étape 2 : Déclenchement d'une alerte trilingue
+1. Sélectionner l'alerte : `ALERT-SEC-01 : Incident Sécuritaire / Confinement Immédiat`.
+2. Choisir le mode de diffusion : **🌍 Trilingue** (ou sélectionner spécifiquement **🇧🇫 Mooré** ou **🇧🇫 Dioula**).
+3. L'aperçu affiche le message traduit et certifié dans les 3 langues.
+
+### Étape 3 : Fonction vocale locale sans API tierce
+1. Cliquer sur **« ▶️ Lire l'Alerte (Audio) »**.
+2. La voix de synthèse locale énonce vocalement le message d'alerte sans aucune requête vers des services cloud payants externes.
+
+### Étape 4 : Diffusion souveraine et accusés de réception
+1. Cliquer sur **« 📢 Diffuser Immédiatement sur le Canal de Crise Matrix »**.
+2. Les agents (@bob_demo, @charlie_demo) reçoivent instantanément la notification sur leurs sessions.
+3. Les accusés de réception horodatés s'affichent en temps réel dans la console de crise.
+4. L'incident peut être clôturé par la diffusion de l'alerte `ALERT-END-04` (Fin d'alerte / reprise).
+
+---
+
+## 8. Épreuve Intrus (Validation du Contrôle d'Accès Strict)
+
+Pour démontrer au jury technique le rejet absolu des personnes non enrôlées :
+
+```bash
+# Exécution du banc de test automatisé de l'épreuve Intrus
+python3 tests/test_matrix_security.py
+```
+
+**Résultats constatés :**
+- **Tentative 1 (Auto-inscription publique) :** Rejetée avec **HTTP 403 `M_FORBIDDEN`** (*Registration has been disabled*).
+- **Tentative 2 (Connexion attaquant inconnu) :** Rejetée avec **HTTP 403 `M_FORBIDDEN`** (*Invalid username or password*).
+- **Tentative 3 (Rejoindre un salon privé sans invitation) :** Rejetée avec **HTTP 401/403**.
+- **Tentative 4 (Fédération externe) :** Rejetée avec **HTTP 404 `M_UNRECOGNIZED`** (*Endpoint fédération coupé*).
+
+---
+
+## 9. Résultats Attendus et Limites Connues (Transparence Technique)
 
 | Aspect | Résultat prouvé | Limite technique connue & explication |
 |---|---|---|

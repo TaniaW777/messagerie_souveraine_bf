@@ -127,6 +127,16 @@ else
     ERRORS=$((ERRORS + 1))
 fi
 
+# D. Console FasoVoice & Audio Hors-Ligne
+FASO_CODE=$(curl -sk -o /dev/null -w "%{http_code}" https://127.0.0.1:443/fasovoice/ -H "Host: messagerie.local" || echo "000")
+FASO_AUDIO_CODE=$(curl -sk -o /dev/null -w "%{http_code}" https://127.0.0.1:443/fasovoice/audio/alert-sec-01-fr.mp3 -H "Host: messagerie.local" || echo "000")
+if [ "$FASO_CODE" = "200" ] && [ "$FASO_AUDIO_CODE" = "200" ]; then
+    echo -e "  ${GREEN}[OK] FasoVoice Console & Audio Hors-Ligne (HTTPS:443) -> HTTP $FASO_CODE / $FASO_AUDIO_CODE${NC}"
+else
+    echo -e "  ${RED}[ÉCHEC] FasoVoice Console -> HTTP $FASO_CODE (audio: $FASO_AUDIO_CODE, attendu: 200)${NC}"
+    ERRORS=$((ERRORS + 1))
+fi
+
 # 6. Bilan Global
 echo -e "\n${BLUE}==============================================================================${NC}"
 if [ $ERRORS -eq 0 ]; then
