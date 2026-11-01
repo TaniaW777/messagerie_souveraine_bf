@@ -12,47 +12,51 @@ Basée sur Matrix (Synapse + Element Web), avec chiffrement de bout en bout et a
 ┌─────────────────────────────────────────────────────────────┐
 │                        UTILISATEUR                          │
 └──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP (local)
+                           │ HTTPS (TLS mkcert)
                     ┌──────▼──────┐
-                    │ Element Web │  http://localhost:8081
-                    │  (port 80)  │
+                    │ Nginx Proxy │  https://messagerie.local (443)
+                    │ (msb-proxy) │  https://auth.messagerie.local (443)
                     └──────┬──────┘
-                           │ Matrix Client API
-                    ┌──────▼──────┐
-                    │   Synapse   │  http://localhost:8008
-                    │  (port 8008)│
-                    └──────┬──────┘
-             ┌─────────────┼─────────────┐
-             │             │             │
-    ┌────────▼──────┐  ┌───▼────┐  ┌────▼────────┐
-    │  PostgreSQL   │  │Authentik│  │  Olm/Megolm │
-    │  (interne)    │  │(OIDC)  │  │ (E2EE natif)│
-    └───────────────┘  └────────┘  └─────────────┘
-                        port 9000
-                        (existant)
+             ┌─────────────┴─────────────┐
+             │                           │
+      ┌──────▼──────┐             ┌──────▼──────┐
+      │ Element Web │             │   Synapse   │
+      │ (msb-element)             │(msb-synapse)│
+      └─────────────┘             └──────┬──────┘
+                                  ┌──────┴─────────────┐
+                                  │                    │
+                           ┌──────▼──────┐      ┌──────▼──────┐
+                           │ PostgreSQL  │      │  Authentik  │
+                           │(msb-postgres│      │ (OIDC + MFA)│
+                           └─────────────┘      └─────────────┘
+                             (interne)           port 9000/9443
+                                                (127.0.0.1)
 ```
 
 ## Technologies
 
 | Composant | Version | Rôle |
 |-----------|---------|------|
-| Matrix Synapse | 1.164.1 | Serveur de messagerie |
-| Element Web | 1.11.109 | Interface utilisateur |
-| PostgreSQL | 16-alpine | Base de données |
-| Authentik | 2026.8.5 | Authentification centralisée + MFA TOTP |
-| Docker Compose | v2 | Orchestration |
+| Matrix Synapse | 1.164.1 | Serveur de messagerie souverain |
+| Element Web | 1.11.109 | Interface utilisateur sécurisée |
+| PostgreSQL | 16-alpine | Base de données relationnelle |
+| Authentik | 2026.8.5 | Fournisseur d'identité OIDC + MFA TOTP |
+| Nginx Reverse Proxy | 1.27-alpine | Terminaison TLS HTTPS locale (mkcert) |
+| Docker Compose | v2 | Orchestration des conteneurs |
 
 ## Fonctionnalités
 
 | Fonctionnalité | État |
 |----------------|------|
-| Messagerie avec chiffrement E2EE (Olm/Megolm) | ✅ Disponible |
-| Inscriptions publiques désactivées | ✅ Configuré |
-| Création de comptes par l'administrateur | ✅ Opérationnel (testé) |
-| Désactivation d'un compte | ✅ Testé (API Synapse) |
-| MFA TOTP via Authentik | ✅ Testé (Authentik seul) |
-| Intégration OIDC Authentik → Synapse | 🔶 Configuré, non testé |
-| Révocation d'appareil/session | ⏳ Scénario préparé |
+| Messagerie avec chiffrement E2EE (Olm/Megolm) | ✅ Opérationnel & validé |
+| Inscriptions publiques désactivées | ✅ Actif (`enable_registration: false`) |
+| Création de comptes par l'administrateur | ✅ Opérationnel (API & OIDC) |
+| Désactivation d'un compte avec révocation immédiate | ✅ Testé & validé (API Synapse) |
+| MFA TOTP obligatoire via Authentik | ✅ Opérationnel & testé |
+| Intégration OIDC Authentik ↔ Synapse (PKCE) | ✅ Opérationnel & testé de bout en bout |
+| Révocation ciblée d'appareil / session | ✅ Testé & validé (API Synapse) |
+| Terminaison HTTPS locale (mkcert) | ✅ Opérationnel (`messagerie.local`) |
+| Isolation réseau locale (127.0.0.1) | ✅ Strictement appliqué sur tous les ports |
 
 ## Prérequis
 
@@ -193,31 +197,32 @@ curl "http://localhost:8008/_synapse/admin/v2/users?limit=10" \
 
 ## Limites connues
 
-1. **Intégration OIDC** : configurée mais non testée (prérequis TLS manquants).
-2. **Révocation E2EE** : la révocation ne supprime pas les messages déjà déchiffrés.
-3. **Pas de fédération** : désactivée intentionnellement (`default_federate: false`).
-4. **HTTPS local** : l'intégration Authentik nécessite un certificat TLS local.
+1. **Révocation E2EE et cache local** : La révocation d'accès invalide immédiatement les jetons d'accès et bloque la réception/émission réseau, mais ne peut pas purger rétroactivement les messages déjà déchiffrés et stockés dans la base locale (IndexedDB) du navigateur du client.
+2. **Pas de fédération externe** : Désactivée intentionnellement pour garantir la souveraineté stricte du périmètre national (`default_federate: false`).
+3. **Résolution DNS locale** : Les noms de domaine `messagerie.local` et `auth.messagerie.local` nécessitent une entrée dans le fichier `/etc/hosts` de chaque machine accédant au service.
 
 ## Structure du projet
 
 ```
 messagerie_souveraine_bf/
-├── docker-compose.yml          # Orchestration des services
+├── docker-compose.yml          # Orchestration des services avec healthchecks
 ├── .env.example                # Modèle de configuration (sans secrets)
 ├── config/
-│   ├── element/config.json     # Configuration Element Web
+│   ├── element/config.json     # Configuration Element Web (branding souverain)
 │   ├── synapse/
 │   │   └── homeserver.yaml.example  # Modèle Synapse (sans secrets)
-│   └── nginx/                  # Réservé au reverse proxy (futur)
+│   └── nginx/
+│       └── nginx.conf          # Configuration reverse proxy HTTPS local
 ├── data/                       # Données persistantes (gitignored)
 │   ├── synapse/                # homeserver.yaml réel, clés, médias
 │   └── postgres/               # Données PostgreSQL
 ├── docs/
 │   ├── installation.md         # Guide d'installation détaillé
-│   └── security/README.md      # Politique de sécurité
+│   ├── security/README.md      # Politique de sécurité
+│   └── TESTS_MANUELS_DEMONSTRATION.md # Guide des tests manuels pas-à-pas
 ├── tests/
 │   ├── mfa/README.md           # Scénarios tests MFA/TOTP
 │   ├── e2ee/README.md          # Scénarios tests chiffrement
 │   └── revocation/README.md    # Scénarios tests révocation
-└── demo/scenario.md            # Scénario de démonstration hackathon
+└── demo/scenario.md            # Scénario de démonstration officiel hackathon
 ```

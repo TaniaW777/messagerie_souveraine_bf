@@ -105,22 +105,16 @@ enable_registration: false
 Les inscriptions publiques sont désactivées. Seul un administrateur
 peut créer des comptes via l'API ou la commande `register_new_matrix_user`.
 
-### MFA TOTP via Authentik
+### MFA TOTP via Authentik et Intégration OIDC
 
-Le MFA TOTP est opérationnel dans Authentik (testé manuellement).
-L'intégration avec Synapse via OIDC est en cours de configuration.
+Le MFA TOTP est opérationnel dans Authentik et l'intégration OIDC avec Synapse est active et validée de bout en bout.
 
-### Méthodes d'authentification locales
+### Protection contre le contournement du MFA
 
-> ⚠️ **Risque de contournement du MFA**
->
-> Tant que l'authentification locale (mot de passe Synapse direct)
-> est activée, les utilisateurs peuvent se connecter sans passer
-> par Authentik et donc sans TOTP.
->
-> La désactivation des méthodes locales ne doit intervenir qu'après :
-> 1. Validation complète de l'intégration OIDC
-> 2. Vérification d'un accès administrateur de secours
+Les utilisateurs provisionnés via Authentik (`alice_test`, `bob_test`) ne possèdent aucun hash de mot de passe local dans Synapse (`password_hash IS NULL`).
+Ils ne peuvent donc pas contourner Authentik ni le MFA TOTP pour accéder à la messagerie : toute connexion de leur part requiert obligatoirement le passage par le flux OIDC et la validation du second facteur.
+
+Seul le compte administrateur d'urgence (`admin`) conserve un mot de passe local dans Synapse afin de garantir un canal de secours en cas d'indisponibilité du fournisseur d'identité.
 
 ---
 

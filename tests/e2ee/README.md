@@ -16,8 +16,23 @@
 Lors des tests validés, les messages échangés entre les utilisateurs de test ont été vérifiés directement dans la base PostgreSQL :
 
 ```bash
-docker exec msb-postgres psql -U synapse -d synapse -c \
-  "SELECT event_id, type, json_extract_path_text(convert_from(content::bytea, 'UTF8'), 'algorithm') AS algo FROM events WHERE type='m.room.encrypted' LIMIT 5;"
+docker exec msb-postgres psql -U synapse -d synapse -c "
+SELECT 
+    e.event_id,
+    e.type,
+    e.stream_ordering,
+    (ej.json::jsonb -> 'content' ->> 'algorithm') AS algorithme,
+    CASE 
+        WHEN (ej.json::jsonb -> 'content' ->> 'ciphertext') IS NOT NULL 
+        THEN 'Présent (' || LENGTH(ej.json::jsonb -> 'content' ->> 'ciphertext') || ' octets)' 
+        ELSE 'Absent' 
+    END AS presence_ciphertext
+FROM events e
+JOIN event_json ej ON e.event_id = ej.event_id
+WHERE e.type = 'm.room.encrypted'
+ORDER BY e.stream_ordering DESC
+LIMIT 5;
+"
 ```
 
 **Observation :**
