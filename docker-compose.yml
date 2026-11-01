@@ -1,4 +1,8 @@
 services:
+
+  # ------------------------------------------------------------------
+  # BASE DE DONNÉES POSTGRESQL
+  # ------------------------------------------------------------------
   db:
     image: postgres:16-alpine
     container_name: msb-postgres
@@ -10,31 +14,75 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - msb-internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 20s
+    # PostgreSQL n'est PAS exposé sur l'hôte — accès interne uniquement
 
+  # ------------------------------------------------------------------
+  # SERVEUR MATRIX SYNAPSE
+  # ------------------------------------------------------------------
   synapse:
-    image: matrixdotorg/synapse:latest
+    image: matrixdotorg/synapse:v1.164.1
     container_name: msb-synapse
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
     volumes:
       - ./data/synapse:/data
+    networks:
+      - msb-internal
+      - msb-public
     ports:
-      - "8008:8008"
+      - "127.0.0.1:${SYNAPSE_PORT:-8008}:8008"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8008/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 30s
 
+  # ------------------------------------------------------------------
+  # INTERFACE ELEMENT WEB
+  # ------------------------------------------------------------------
   element:
-    image: vectorim/element-web:latest
+    image: vectorim/element-web:v1.11.109
     container_name: msb-element
     restart: unless-stopped
     depends_on:
-      - synapse
+      synapse:
+        condition: service_healthy
     volumes:
       - ./config/element/config.json:/app/config.json:ro
+    networks:
+      - msb-public
     ports:
-      - "8081:80"
+      - "127.0.0.1:${ELEMENT_PORT:-8081}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ | grep -q 'Element' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  # Réseau interne : Synapse ↔ PostgreSQL (pas d'accès externe)
+  msb-internal:
+    driver: bridge
+    internal: true
+
+  # Réseau public : Element ↔ Synapse (accès hôte via ports)
+  msb-public:
+    driver: bridge
+
+volumes:
+  # Les volumes sont gérés en bind mount (./data/) pour faciliter
+  # la sauvegarde et l'inspection. Pas de volumes Docker nommés.

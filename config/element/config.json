@@ -1,10 +1,21 @@
 {
     "default_server_config": {
         "m.homeserver": {
-            "base_url": "http://localhost:8008",
-            "server_name": "localhost"
+            "base_url": "http://messagerie.local:8008",
+            "server_name": "messagerie.local"
         }
     },
     "brand": "Messagerie Souveraine BF",
-    "disable_guests": true
+    "disable_guests": true,
+    "default_theme": "light",
+    "room_directory": {
+        "servers": ["messagerie.local"]
+    },
+    "features": {
+        "feature_thread": true
+    },
+    "show_labs_settings": false,
+    "default_federate": false,
+    "piwik": false,
+    "privacy_policy_url": false
 }

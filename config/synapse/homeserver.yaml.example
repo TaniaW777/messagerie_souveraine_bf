@@ -1,29 +1,80 @@
-server_name: "localhost"
+server_name: "${SYNAPSE_SERVER_NAME}"
 pid_file: /data/homeserver.pid
+
+# ---------------------------------------------------------------
+# RÉSEAU
+# x_forwarded: true UNIQUEMENT si un reverse proxy de confiance
+# (nginx, traefik…) transmet le header X-Forwarded-For.
+# En accès direct sans proxy, laisser false.
+# Pour la démo locale sans proxy : false
+# ---------------------------------------------------------------
 listeners:
   - port: 8008
     tls: false
     type: http
-    x_forwarded: true
+    x_forwarded: false
     bind_addresses: ['0.0.0.0']
     resources:
       - names: [client, federation]
         compress: false
+
+# ---------------------------------------------------------------
+# BASE DE DONNÉES (PostgreSQL — obligatoire, pas de SQLite)
+# Le mot de passe doit correspondre à POSTGRES_PASSWORD dans .env
+# ---------------------------------------------------------------
 database:
   name: psycopg2
   args:
     user: synapse
-    password: CHANGE_ME_mot_de_passe_long
+    password: CHANGE_ME_mot_de_passe_postgresql_long_et_aleatoire
     database: synapse
     host: db
     port: 5432
     cp_min: 5
     cp_max: 10
-log_config: "/data/localhost.log.config"
+
+# ---------------------------------------------------------------
+# CHEMINS
+# ---------------------------------------------------------------
+log_config: "/data/${SYNAPSE_SERVER_NAME}.log.config"
 media_store_path: /data/media_store
-signing_key_path: "/data/localhost.signing.key"
-registration_shared_secret: "CHANGE_ME"
-macaroon_secret_key: "CHANGE_ME"
-form_secret: "CHANGE_ME"
+signing_key_path: "/data/${SYNAPSE_SERVER_NAME}.signing.key"
+
+# ---------------------------------------------------------------
+# SECRETS SYNAPSE
+# Valeurs CHANGE_ME : à remplacer par des chaînes aléatoires
+# de 64 caractères minimum.
+# Voir .env.example pour la commande de génération.
+# NE JAMAIS COMMITTER les vraies valeurs.
+# ---------------------------------------------------------------
+registration_shared_secret: "CHANGE_ME_generer_un_secret_aleatoire_64_caracteres"
+macaroon_secret_key: "CHANGE_ME_generer_un_autre_secret_aleatoire_64_caracteres"
+form_secret: "CHANGE_ME_generer_un_troisieme_secret_aleatoire_64_caracteres"
+
+# ---------------------------------------------------------------
+# INSCRIPTION
+# Désactivée : les comptes sont créés par l'administrateur
+# ---------------------------------------------------------------
 enable_registration: false
 report_stats: false
+
+# ---------------------------------------------------------------
+# INTÉGRATION OIDC / AUTHENTIK
+# Décommenter et compléter après configuration d'Authentik
+# Le client_secret NE DOIT JAMAIS être commité dans Git.
+# L'issuer doit être accessible en HTTPS depuis le conteneur.
+# ---------------------------------------------------------------
+# oidc_providers:
+#   - idp_id: authentik
+#     idp_name: "Authentik"
+#     discover: true
+#     issuer: "https://auth.messagerie.local/application/o/synapse/"
+#     client_id: "CHANGE_ME_client_id"
+#     client_secret: "CHANGE_ME_client_secret"
+#     scopes: ["openid", "profile", "email"]
+#     user_mapping_provider:
+#       config:
+#         localpart_template: "{{ user.preferred_username }}"
+#         display_name_template: "{{ user.name }}"
+#     allow_existing_users: true
+#     backchannel_logout_enabled: true
