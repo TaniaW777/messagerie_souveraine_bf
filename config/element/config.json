@@ -8,9 +8,11 @@
     "brand": "Messagerie Souveraine BF",
     "disable_custom_urls": true,
     "disable_guests": true,
-    "default_theme": "light",
+    "default_theme": "custom-Racines BF",
     "room_directory": {
-        "servers": ["messagerie.local"]
+        "servers": [
+            "messagerie.local"
+        ]
     },
     "features": {
         "feature_thread": true
@@ -18,5 +20,44 @@
     "show_labs_settings": false,
     "default_federate": false,
     "piwik": false,
-    "privacy_policy_url": false
+    "privacy_policy_url": false,
+    "setting_defaults": {
+        "custom_themes": [
+            {
+                "name": "Racines BF",
+                "is_dark": false,
+                "colors": {
+                    "primary-color": "#2B664D",
+                    "accent-color": "#326F52",
+                    "sidebar-color": "#E4EFE5",
+                    "roomlist-background-color": "#FBFAF5",
+                    "roomlist-text-color": "#293F34",
+                    "roomlist-text-secondary-color": "#586E5E",
+                    "roomlist-highlights-color": "#E4EFE5",
+                    "roomlist-separator-color": "#E9ECE2",
+                    "timeline-background-color": "#FFFDF8",
+                    "timeline-text-color": "#293F34",
+                    "timeline-text-secondary-color": "#586E5E",
+                    "timeline-highlights-color": "#F5F8EF"
+                },
+                "compound": {
+                    "--cpd-color-bg-canvas-default": "#FFFDF8",
+                    "--cpd-color-bg-subtle-primary": "#F5F8EF",
+                    "--cpd-color-bg-subtle-secondary": "#E4EFE5",
+                    "--cpd-color-bg-action-primary-rest": "#326F52",
+                    "--cpd-color-bg-action-primary-hovered": "#285A42",
+                    "--cpd-color-bg-action-primary-pressed": "#1D4537",
+                    "--cpd-color-text-action-accent": "#285B43",
+                    "--cpd-color-icon-accent-primary": "#326F52"
+                }
+            }
+        ]
+    },
+    "branding": {
+        "auth_header_logo_url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgyPSIxIiB5Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iI0U2REFCNyIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0E4OTk3MCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSI5NCIgaGVpZ2h0PSI5NCIgcng9IjI0IiBmaWxsPSIjMUQ0NTM3Ii8+PHBhdGggZD0iTTUwIDE3IDU3LjUgNDAgODEuOCA0MCA2Mi4xIDU0LjMgNjkuNiA3Ny41IDUwIDYzLjIgMzAuNCA3Ny41IDM3LjkgNTQuMyAxOC4yIDQwIDQyLjUgNDBaIiBmaWxsPSJ1cmwoI2cpIi8+PHBhdGggZD0iTTI5IDg5SDQzIiBzdHJva2U9IiNCNjZFNjUiIHN0cm9rZS13aWR0aD0iMyIvPjxwYXRoIGQ9Ik00NSA4OUg1NSIgc3Ryb2tlPSIjQzlBODVDIiBzdHJva2Utd2lkdGg9IjMiLz48cGF0aCBkPSJNNTcgODlINzEiIHN0cm9rZT0iIzg1QTg4RCIgc3Ryb2tlLXdpZHRoPSIzIi8+PC9zdmc+",
+        "welcome_background_url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiNGNEY4RUYiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0UyRUNFMCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0Y0RUJEOCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgZmlsbD0idXJsKCNnKSIvPjxjaXJjbGUgY3g9IjEyOTAiIGN5PSI2NTUiIHI9IjIzMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjQzVCNzhDIiBvcGFjaXR5PSIuMyIvPjxwYXRoIGQ9Ik0xMjkwIDUyNSAxMzIwIDYxNSAxNDE0IDYxNSAxMzM4IDY3MCAxMzY3IDc2MCAxMjkwIDcwNSAxMjEzIDc2MCAxMjQyIDY3MCAxMTY2IDYxNSAxMjYwIDYxNVoiIGZpbGw9IiNDOEI3ODkiIG9wYWNpdHk9Ii4yNSIvPjwvc3ZnPg=="
+    },
+    "embedded_pages": {
+        "home_url": "/racines-accueil.html"
+    }
 }
