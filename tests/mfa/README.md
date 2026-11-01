@@ -19,7 +19,7 @@
    - Étape 2 : Mot de passe (`password`)
    - Étape 3 : Validation du facteur de possession TOTP 6 chiffres (`authenticator_totp`)
 3. **Protection contre le contournement :**
-   - Les utilisateurs OIDC (`alice_test`, `bob_test`) n'ont aucun condensat de mot de passe stocké dans Synapse (`password_hash IS NULL`).
+   - Les utilisateurs OIDC (`alice_demo`, `bob_demo`, `charlie_demo`) s'authentifient via la fédération d'identité centralisée.
    - Seul le compte d'urgence d'administration (`admin`) dispose d'une authentification locale par mot de passe robuste dans Synapse, réservée aux opérations de secours et d'administration.
 
 ---
@@ -38,6 +38,6 @@ Le script de test automatisé a vérifié les points suivants de bout en bout :
 
 1. Se rendre sur `https://messagerie.local`.
 2. Cliquer sur le bouton **« Se connecter avec Authentik »**.
-3. Saisir l'identifiant (ex: `alice_test`) et le mot de passe (`Securite_BF_2026!`).
+3. Saisir l'identifiant (ex: `alice_demo`) et le mot de passe configuré localement dans `.credentials_demo.local`.
 4. À l'invite TOTP, saisir le code à 6 chiffres fourni par l'application d'authentification.
 5. Constater la redirection automatique vers l'espace de travail Element Web avec le profil de l'agent actif.

@@ -18,7 +18,7 @@
 ADMIN_TOKEN=$(curl -sk -X POST https://messagerie.local/_matrix/client/v3/login \
   --resolve messagerie.local:443:127.0.0.1 \
   -H "Content-Type: application/json" \
-  -d '{"type":"m.login.password","user":"admin","password":"${ADMIN_PASSWORD}"}' \
+  -d '{"type":"m.login.password","user":"admin","password":"<MOT_DE_PASSE_ADMIN_SECOURS>"}' \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 ```
 

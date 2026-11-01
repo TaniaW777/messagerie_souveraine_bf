@@ -65,7 +65,7 @@ Avant de démarrer les tests :
 - **Action :**
   1. Cliquer sur le bouton **« Se connecter avec Authentik »**.
   2. Le navigateur est redirigé vers `https://auth.messagerie.local`.
-  3. Dans le formulaire Authentik, saisir l'identifiant d'Alice (`alice_test`).
+  3. Dans le formulaire Authentik, saisir l'identifiant d'Alice (`alice_demo`).
   4. Saisir le mot de passe d'Alice (identifiant de démonstration configuré localement).
   5. Cliquer sur **« Continuer »** (ou « Se connecter »).
 - **Ce qui doit apparaître :** Le formulaire de saisie des identifiants laisse place à l'écran de demande du second facteur (MFA).
@@ -93,11 +93,11 @@ Avant de démarrer les tests :
 - **URL :** `https://messagerie.local/#/home`
 - **Où regarder :** En haut à gauche de l'interface Element Web, au niveau du profil utilisateur.
 - **Ce qui doit apparaître :**
-  - L'avatar utilisateur affiche l'identifiant `@alice_test:messagerie.local`.
+  - L'avatar utilisateur affiche l'identifiant `@alice_demo:messagerie.local`.
   - La barre latérale gauche liste les espaces et salons.
   - L'interface est pleinement opérationnelle et connectée en temps réel.
 - **Résultat attendu :** Alice est connectée avec une session Matrix nominative sans avoir eu à saisir de mot de passe directement dans Synapse.
-- **Comment savoir si le test est réussi :** L'identifiant complet `@alice_test:messagerie.local` est confirmé dans les paramètres de profil.
+- **Comment savoir si le test est réussi :** L'identifiant complet `@alice_demo:messagerie.local` est confirmé dans les paramètres de profil.
 
 ---
 
@@ -113,7 +113,7 @@ Avant de démarrer les tests :
   4. Cliquer sur **« Créer le salon »**.
 - **Ce qui doit apparaître :**
   - Le salon s'ouvre dans la zone principale.
-  - Un message système au centre indique : *"alice_test a activé le chiffrement de bout en bout (algorithme m.megolm.v1.aes-sha2)"*.
+  - Un message système au centre indique : *"alice_demo a activé le chiffrement de bout en bout (algorithme m.megolm.v1.aes-sha2)"*.
   - Une icône de cadenas est visible dans l'en-tête du salon.
 - **Résultat attendu :** Le salon est instancié avec le module cryptographique Megolm activé.
 - **Comment savoir si le test est réussi :** Présence de la notification d'activation du chiffrement et de l'icône de cadenas.
@@ -124,10 +124,10 @@ Avant de démarrer les tests :
 - **Nature du test :** Graphique (Navigateur).
 - **Où cliquer :**
   1. Dans le salon chiffré créé, cliquer sur l'icône **Membres** (panneau latéral droit) ou sur le bouton **« Inviter dans ce salon »**.
-  2. Saisir l'identifiant exact : `@bob_test:messagerie.local`.
+  2. Saisir l'identifiant exact : `@bob_demo:messagerie.local`.
   3. Sélectionner Bob dans les résultats et cliquer sur **« Inviter »**.
 - **Ce qui doit apparaître :**
-  - Un message d'événement s'affiche dans le fil de discussion : *"alice_test a invité bob_test"*.
+  - Un message d'événement s'affiche dans le fil de discussion : *"alice_demo a invité bob_demo"*.
   - Dans la liste des membres, Bob apparaît avec la mention *"Invité"*.
 - **Résultat attendu :** L'événement d'invitation d'état de salon est propagé par le serveur Synapse.
 - **Comment savoir si le test est réussi :** L'invitation est visible en attente dans la liste des membres.
@@ -140,14 +140,14 @@ Avant de démarrer les tests :
   1. Ouvrir une **nouvelle fenêtre de navigation privée** dans Firefox (`Ctrl+Shift+P`).
   2. Naviguer vers `https://messagerie.local`.
   3. Cliquer sur **« Se connecter avec Authentik »**.
-  4. Saisir l'identifiant de Bob (`bob_test`) et son mot de passe existant.
+  4. Saisir l'identifiant de Bob (`bob_demo`) et son mot de passe existant.
   5. Saisir le code TOTP valide à 6 chiffres associé au secret de Bob.
-  6. Valider et accéder à Element Web sous le compte `@bob_test:messagerie.local`.
+  6. Valider et accéder à Element Web sous le compte `@bob_demo:messagerie.local`.
   7. Dans la liste des salons à gauche, localiser l'invitation en surbrillance pour `Cellule de Crise Souveraine`.
   8. Cliquer sur **« Rejoindre »**.
 - **Ce qui doit apparaître :**
   - Bob entre dans le salon chiffré.
-  - Dans les deux fenêtres (Alice et Bob), l'événement système indique : *"bob_test a rejoint le salon"*.
+  - Dans les deux fenêtres (Alice et Bob), l'événement système indique : *"bob_demo a rejoint le salon"*.
 - **Résultat attendu :** Les deux utilisateurs sont désormais co-participants du salon sécurisé.
 - **Comment savoir si le test est réussi :** Bob a accès à la zone de saisie du salon et l'icône cadenas est présente.
 
@@ -223,7 +223,7 @@ Avant de démarrer les tests :
 
   # 2. Interroger la liste des appareils de Bob
   curl -sk --resolve messagerie.local:443:127.0.0.1 \
-    "https://messagerie.local/_synapse/admin/v2/users/@bob_test:messagerie.local/devices" \
+    "https://messagerie.local/_synapse/admin/v2/users/@bob_demo:messagerie.local/devices" \
     -H "Authorization: Bearer $ADMIN_TOKEN" | python3 -m json.tool
   ```
 - **Ce qui doit apparaître :** Une structure JSON listant les appareils avec `device_id`, `display_name`, `last_seen_ip` et `last_seen_ts`.
@@ -235,7 +235,7 @@ Avant de démarrer les tests :
 ### TEST 11 : Désactivation d'un compte de test
 - **Nature du test :** Commande Terminal.
 - ⚠️ **RÈGLE DE SÉCURITÉ ABSOLUE :**
-  **Ne réalisez PAS ce test sur `alice_test`, `bob_test`, ni `admin`** afin de préserver votre environnement de démonstration.
+  **Ne réalisez PAS ce test sur `alice_demo`, `bob_demo`, ni `admin`** afin de préserver votre environnement de démonstration.
   Utilisez exclusivement le compte dédié prévu à cet effet : `@user_revoc_test:messagerie.local` (ou un compte temporaire jetable).
 - **Commande à exécuter :**
   ```bash
@@ -285,10 +285,10 @@ Avant de démarrer les tests :
 | **TEST 1** | Accès à Element Web | Graphique | ✅ Succès (HTTPS 200) |
 | **TEST 2** | Connexion Alice via Authentik | Graphique | ✅ Succès (Redirection OIDC) |
 | **TEST 3** | Validation TOTP Alice | Graphique | ✅ Succès (Code 6 chiffres validé) |
-| **TEST 4** | Accès espace Matrix Alice | Graphique | ✅ Succès (Session `@alice_test`) |
+| **TEST 4** | Accès espace Matrix Alice | Graphique | ✅ Succès (Session `@alice_demo`) |
 | **TEST 5** | Création salon chiffré E2EE | Graphique | ✅ Succès (Cadenas Megolm actif) |
 | **TEST 6** | Invitation de Bob | Graphique | ✅ Succès (Invitation émise) |
-| **TEST 7** | Connexion & adhésion Bob | Graphique | ✅ Succès (Session `@bob_test` active) |
+| **TEST 7** | Connexion & adhésion Bob | Graphique | ✅ Succès (Session `@bob_demo` active) |
 | **TEST 8** | Dialogue chiffré bidirectionnel | Graphique | ✅ Succès (Messages déchiffrés) |
 | **TEST 9** | Preuve SQL chiffrement serveur | Terminal | ✅ Succès (Ciphertext seul en base) |
 | **TEST 10** | Inventaire des appareils connectés | Mixte | ✅ Succès (Sessions listées) |
@@ -308,16 +308,16 @@ Les mots de passe des utilisateurs ordinaires sont hébergés souverainement dan
 - **Option Interface Graphique :**
   1. Se connecter en tant qu'administrateur sur `https://auth.messagerie.local` avec le compte administrateur Authentik.
   2. Aller dans **Administration** > **Répertoire** > **Utilisateurs**.
-  3. Cliquer sur l'utilisateur `alice_test` (puis `bob_test`).
+  3. Cliquer sur l'utilisateur `alice_demo` (puis `bob_demo`).
   4. Choisir **« Définir le mot de passe »**, saisir le nouveau mot de passe fort et valider.
 - **Option Ligne de Commande (Authentik Shell) :**
   ```bash
   sg docker -c "docker exec authentik-server-1 ak shell -c '
   from authentik.core.models import User
-  u = User.objects.get(username=\"alice_test\")
+  u = User.objects.get(username=\"alice_demo\")
   u.set_password(\"NOUVEAU_MOT_DE_PASSE_ALICE_FORT\")
   u.save()
-  b = User.objects.get(username=\"bob_test\")
+  b = User.objects.get(username=\"bob_demo\")
   b.set_password(\"NOUVEAU_MOT_DE_PASSE_BOB_FORT\")
   b.save()
   print(\"Mots de passe mis à jour avec succès.\")
@@ -329,7 +329,7 @@ Pour révoquer les clés TOTP de démonstration utilisées durant le hackathon :
 ```bash
 sg docker -c "docker exec authentik-server-1 ak shell -c '
 from authentik.stages.authenticator_totp.models import TOTPDevice
-deleted, _ = TOTPDevice.objects.filter(user__username__in=[\"alice_test\", \"bob_test\"]).delete()
+deleted, _ = TOTPDevice.objects.filter(user__username__in=[\"alice_demo\", \"bob_demo\"]).delete()
 print(f\"{deleted} anciens périphériques TOTP supprimés.\")
 '"
 ```

@@ -33,6 +33,7 @@ ssl/
 # DUMPS ET SAUVEGARDES
 # ============================================================
 *.sql
+!tests/*.sql
 *.dump
 *.bak
 *.backup
@@ -60,3 +61,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 node_modules/
+
+# Identifiants locaux securises de demonstration
+.credentials*
+*.local.txt

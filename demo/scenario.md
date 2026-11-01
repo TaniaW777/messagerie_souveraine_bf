@@ -47,24 +47,23 @@ L'autorité racine locale `mkcert` a été importée dans la base de certificats
 ## 3. Comptes de Démonstration et Identifiants
 
 Les comptes ont été pré-configurés dans Authentik et Matrix Synapse avec le flux MFA TOTP obligatoire.
+Pour des raisons impératives de sécurité, les mots de passe et les clés secrètes TOTP de démonstration sont stockés localement sur la machine de test dans le fichier sécurisé :
+`~/messagerie_souveraine_bf/.credentials_demo.local` (permissions `chmod 600`, strictement exclu de Git).
 
-| Identifiant | Rôle opérationnel | Mot de passe Authentik | Secret TOTP (Application OTP) |
+| Identifiant | Rôle opérationnel | Authentification Authentik | Facteur de possession (MFA TOTP) |
 |---|---|---|---|
-| **`alice_test`** | Responsable ministériel | Mot de passe local (fichier sécurisé) | TOTP dynamique (secret local) |
-| **`bob_test`** | Agent d'intervention | Mot de passe local (fichier sécurisé) | TOTP dynamique (secret local) |
-| **`admin`** | Administrateur système Synapse | Accès de secours local (fichier sécurisé) | Compte de secours interne Synapse (API) |
+| **`alice_demo`** | Responsable ministériel | OIDC via Authentik | TOTP dynamique (RFC 6238) |
+| **`bob_demo`** | Agent d'intervention | OIDC via Authentik | TOTP dynamique (RFC 6238) |
+| **`charlie_demo`** | Collaborateur cellule de crise | OIDC via Authentik | TOTP dynamique (RFC 6238) |
+| **`admin`** | Administrateur système Synapse | Secours local Synapse | Compte de secours API d'urgence |
 
-### URIs pour configurateurs d'applications TOTP (Google Authenticator, FreeOTP, Aegis) :
-- Clés TOTP chargées depuis le fichier local sécurisé, jamais intégrées à la documentation.
-- Clés TOTP chargées depuis le fichier local sécurisé, jamais intégrées à la documentation.
-
-*(Génération d'un code OTP en ligne de commande pour le présentateur) :*
+### Génération d'un code OTP dynamique en ligne de commande pour le présentateur :
 ```bash
 # Générer le code TOTP actuel pour Alice
-python3 -c "import hmac, base64, struct, hashlib, time; key=base64.b32decode("CHANGE_ME_TOTP_SECRET"); t=int(time.time()//30); msg=struct.pack('>Q', t); h=hmac.new(key, msg, hashlib.sha1).digest(); o=h[19]&15; code=(struct.unpack('>I', h[o:o+4])[0] & 0x7fffffff)%1000000; print(f'Code TOTP Alice: {code:06d}')"
+python3 -c "import configparser, os, hmac, base64, struct, hashlib, time; c=configparser.ConfigParser(); c.read(os.path.expanduser('~/.credentials_demo.local')); k=c.get('alice_demo','TOTP_SECRET'); b=base64.b32decode(k + '='*(8-len(k)%8), casefold=True); t=int(time.time()//30); msg=struct.pack('>Q', t); h=hmac.new(b, msg, hashlib.sha1).digest(); o=h[19]&15; code=(struct.unpack('>I', h[o:o+4])[0] & 0x7fffffff)%1000000; print(f'Code TOTP Alice: {code:06d}')"
 
 # Générer le code TOTP actuel pour Bob
-python3 -c "import hmac, base64, struct, hashlib, time; key=base64.b32decode("CHANGE_ME_TOTP_SECRET"); t=int(time.time()//30); msg=struct.pack('>Q', t); h=hmac.new(key, msg, hashlib.sha1).digest(); o=h[19]&15; code=(struct.unpack('>I', h[o:o+4])[0] & 0x7fffffff)%1000000; print(f'Code TOTP Bob: {code:06d}')"
+python3 -c "import configparser, os, hmac, base64, struct, hashlib, time; c=configparser.ConfigParser(); c.read(os.path.expanduser('~/.credentials_demo.local')); k=c.get('bob_demo','TOTP_SECRET'); b=base64.b32decode(k + '='*(8-len(k)%8), casefold=True); t=int(time.time()//30); msg=struct.pack('>Q', t); h=hmac.new(b, msg, hashlib.sha1).digest(); o=h[19]&15; code=(struct.unpack('>I', h[o:o+4])[0] & 0x7fffffff)%1000000; print(f'Code TOTP Bob: {code:06d}')"
 ```
 
 ---
@@ -77,7 +76,7 @@ Ce parcours s'effectue avec **deux fenêtres de navigateur côte à côte** (ex:
 +------------------------------------+   +------------------------------------+
 |        Alice (Fenêtre Standard)    |   |      Bob (Navigation Privée)       |
 |  https://messagerie.local          |   |  https://messagerie.local          |
-|  @alice_test:messagerie.local      |   |  @bob_test:messagerie.local        |
+|  @alice_demo:messagerie.local      |   |  @bob_demo:messagerie.local        |
 +------------------------------------+   +------------------------------------+
 ```
 
@@ -88,7 +87,7 @@ Ce parcours s'effectue avec **deux fenêtres de navigateur côte à côte** (ex:
 4. Le navigateur est redirigé de manière transparente vers `https://auth.messagerie.local`.
 
 ### Étape 2 : Alice valide son identité et son TOTP
-1. Alice saisit son identifiant `alice_test` et son mot de passe `défini localement`.
+1. Alice saisit son identifiant `alice_demo` et son mot de passe (défini dans `.credentials_demo.local`).
 2. Authentik demande immédiatement le **Code de sécurité à 6 chiffres (MFA TOTP)**.
 3. *(Démonstration de refus optionnelle)* : Saisir `000000` -> Authentik rejette avec un message d'erreur.
 4. Saisir le code TOTP valide généré par l'application (ou la commande ci-dessus).
@@ -96,7 +95,7 @@ Ce parcours s'effectue avec **deux fenêtres de navigateur côte à côte** (ex:
 
 ### Étape 3 : Alice accède à son espace sécurisé Element
 1. Synapse valide le jeton OIDC et délivre une session Matrix.
-2. Element Web affiche la page d'accueil de l'agent `@alice_test:messagerie.local`.
+2. Element Web affiche la page d'accueil de l'agent `@alice_demo:messagerie.local`.
 3. Noter que l'enregistrement public de compte tiers est désactivé sur le serveur : seuls les comptes provisionnés par l'administration sont autorisés.
 
 ### Étape 4 : Alice crée un salon privé chiffré
@@ -108,16 +107,16 @@ Ce parcours s'effectue avec **deux fenêtres de navigateur côte à côte** (ex:
 
 ### Étape 5 : Alice invite Bob
 1. Dans le salon créé, cliquer sur le panneau latéral droit > **Inviter à ce salon**.
-2. Saisir l'identifiant exact : `@bob_test:messagerie.local`.
+2. Saisir l'identifiant exact : `@bob_demo:messagerie.local`.
 3. Cliquer sur **« Inviter »**.
 4. L'interface affiche l'invitation en attente.
 
 ### Étape 6 : Bob se connecte via Authentik et valide son TOTP
 1. Ouvrir une **nouvelle fenêtre de navigation privée** sur `https://messagerie.local`.
 2. Cliquer sur **« Se connecter avec Authentik »**.
-3. Saisir `bob_test` et le mot de passe `défini localement`.
+3. Saisir `bob_demo` et son mot de passe.
 4. Saisir le code TOTP à 6 chiffres de Bob.
-5. Bob accède à son interface Element Web en tant que `@bob_test:messagerie.local`.
+5. Bob accède à son interface Element Web en tant que `@bob_demo:messagerie.local`.
 
 ### Étape 7 : Bob rejoint le salon chiffré
 1. Dans la liste des salons de Bob, une invitation apparaît pour `Cellule de Crise Souveraine`.
@@ -199,20 +198,20 @@ Lorsqu'un agent signale la perte d'un terminal (smartphone, tablette) :
    ADMIN_TOKEN=$(curl -sk -X POST https://messagerie.local/_matrix/client/v3/login \
      --resolve messagerie.local:443:127.0.0.1 \
      -H "Content-Type: application/json" \
-     -d '{"type":"m.login.password","user":"admin","password":"${ADMIN_PASSWORD}"}' \
+     -d '{"type":"m.login.password","user":"admin","password":"<MOT_DE_PASSE_ADMIN_SECOURS>"}' \
      | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
    ```
 2. Lister les appareils d'un utilisateur :
    ```bash
    curl -sk --resolve messagerie.local:443:127.0.0.1 \
-     "https://messagerie.local/_synapse/admin/v2/users/@bob_test:messagerie.local/devices" \
+     "https://messagerie.local/_synapse/admin/v2/users/@bob_demo:messagerie.local/devices" \
      -H "Authorization: Bearer $ADMIN_TOKEN" | python3 -m json.tool
    ```
 3. Supprimer un appareil spécifique sans couper les autres appareils :
    ```bash
    # Remplacer DEVICE_ID par l'identifiant de l'appareil à révoquer
    curl -sk -X DELETE --resolve messagerie.local:443:127.0.0.1 \
-     "https://messagerie.local/_synapse/admin/v2/users/@bob_test:messagerie.local/devices/<DEVICE_ID>" \
+     "https://messagerie.local/_synapse/admin/v2/users/@bob_demo:messagerie.local/devices/<DEVICE_ID>" \
      -H "Authorization: Bearer $ADMIN_TOKEN"
    ```
 4. **Constat :** La session de cet appareil est immédiatement invalidée (`HTTP 401 M_UNKNOWN_TOKEN`), tandis que les autres sessions de l'agent restent pleinement fonctionnelles.
