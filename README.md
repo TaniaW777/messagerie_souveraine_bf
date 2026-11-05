@@ -9,6 +9,8 @@
 [![Cybersécurité](https://img.shields.io/badge/Cybersécurité-Sentinel%20BF-purple.svg)](docs/SENTINEL_BF.md)
 [![Innovation](https://img.shields.io/badge/Innovation-FasoVoice%20Multilingue-red.svg)](demo/fasovoice/)
 
+## Vidéo de démonstration
+[Voir la vidéo (3 min)](https://drive.google.com/file/d/17Y5SEWB9C3xdVqyfZnKWrkIffFhv3Ajs/view?usp=sharing)
 ---
 
 ## 1. Problème et Solution
