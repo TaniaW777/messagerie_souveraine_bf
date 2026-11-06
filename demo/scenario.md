@@ -3,6 +3,8 @@
 
 Ce document détaille le déroulement complet de la démonstration de la **Messagerie Souveraine BF**, prouvant le respect des exigences de sécurité, de souveraineté des données, d'authentification forte (OIDC + MFA TOTP), de chiffrement de bout en bout (E2EE Megolm) et de gouvernance administrative (révocation ciblée et désactivation).
 
+## Vidéo de démonstration
+[Voir la vidéo de démonstration](https://drive.google.com/file/d/17Y5SEWB9C3xdVqyfZnKWrkIffFhv3Ajs/view?usp=sharing)
 ---
 
 ## 1. Architecture et URLs de Démonstration
